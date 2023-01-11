@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 
-import java.lang.Math
+import java.lang.Math;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -20,11 +20,22 @@ import java.lang.Math
  */
 
 public class Robot extends TimedRobot {
-  private final PWMSparkMax m_leftDrive = new PWMSparkMax(0); 
-  private final PWMSparkMax m_rightDrive = new PWMSparkMax(1);
-  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftDrive, m_rightDrive);
+  private final PWMSparkMax m_leftFrontDrive = new PWMSparkMax(0);
+  private final PWMSparkMax m_leftBackDrive = new PWMSparkMax(1);  
+  private final PWMSparkMax m_rightFrontDrive = new PWMSparkMax(2);
+  private final PWMSparkMax m_rightBackDrive = new PWMSparkMax(3); 
+  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftFrontDrive, m_rightFrontDrive);
   private final XboxController m_controller = new XboxController(0);
   private final Timer m_timer = new Timer();
+
+  private double speed = 0;
+  private double turn = 0;
+  
+
+  private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
+  private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
+  private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
+  private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -35,7 +46,8 @@ public class Robot extends TimedRobot {
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    m_rightDrive.setInverted(true);
+    m_rightFrontDrive.setInverted(true);
+    m_rightBackDrive.setInverted(true);
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -66,12 +78,17 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if !(abs(m_controller.getLeftY()) < 0.05) && !(abs(m_controller.getRightX()) < 0.05) {
+    if (!(Math.abs(m_controller.getLeftY()) < 0.05) && !(Math.abs(m_controller.getRightX()) < 0.05)) {
+      
+      speed = -m_controller.getLeftY();  // note - using xbox controller 
+      turn = -m_controller.getRightX(); // note - using xbox controller
 
-
-
+      leftFrontMotor.accelerateSpeed(speed + turn);
+      leftBackMotor.accelerateSpeed(speed + turn);
+      rightFrontMotor.accelerateSpeed(speed - turn);
+      rightBackMotor.accelerateSpeed(speed - turn);
+  
       m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
-
     }
   }
 
@@ -83,17 +100,22 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {}
 
-  public int accelarateSpeed() {
-
-  }
 }
 
-public class MotorAccel {
+class MotorAccel {
+  private Timer motorTimer = new Timer();
+
   public float motorSpeed = 0;
 
   public PWMSparkMax MotorName;
 
-  MotorAccel() {
-    speed = 
+  MotorAccel(PWMSparkMax MotorTempName) {
+    MotorName = MotorTempName;    
+    motorTimer.reset();
+    motorTimer.start();
+  }
+
+  public void accelerateSpeed(double desiredSpeed) {
+    
   }
 }
