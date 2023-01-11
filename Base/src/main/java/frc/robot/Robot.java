@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.hal.ThreadsJNI;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -88,7 +89,9 @@ public class Robot extends TimedRobot {
       rightFrontMotor.accelerateSpeed(speed - turn);
       rightBackMotor.accelerateSpeed(speed - turn);
   
-      m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
+      // old code
+
+      // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
     }
   }
 
@@ -103,11 +106,16 @@ public class Robot extends TimedRobot {
 }
 
 class MotorAccel {
+  private final double accelerationIncrement = 0.1;
+
+  private final double accelerationTime = 0.15; 
+
   private Timer motorTimer = new Timer();
 
-  public float motorSpeed = 0;
+  public double motorSpeed = 0;
 
   public PWMSparkMax MotorName;
+
 
   MotorAccel(PWMSparkMax MotorTempName) {
     MotorName = MotorTempName;    
@@ -116,6 +124,17 @@ class MotorAccel {
   }
 
   public void accelerateSpeed(double desiredSpeed) {
-    
+    if (motorTimer.get() >= accelerationTime) {
+      if (Math.abs(desiredSpeed-motorSpeed) < accelerationIncrement) {
+        motorSpeed = desiredSpeed;
+      } else {
+        motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
+      }
+      
+      MotorName.set(desiredSpeed);
+
+      motorTimer.reset();
+    }
+
   }
 }
