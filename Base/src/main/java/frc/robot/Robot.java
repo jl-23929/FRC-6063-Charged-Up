@@ -5,11 +5,13 @@
 package frc.robot;
 
 import edu.wpi.first.hal.ThreadsJNI;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import edu.wpi.first.wpilibj.Encoder;
 
 // april tags import + open cv
 
@@ -20,9 +22,17 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+import java.util.HashSet;
 
-// OMG ^ FIRST IS SOO KIND
+// webcam
 
+import edu.wpi.first.cameraserver.CameraServer;
+
+// encoder
+
+
+
+//
 import java.lang.Math;
 
 /**
@@ -39,12 +49,16 @@ public class Robot extends TimedRobot {
   private final PWMSparkMax m_rightBackDrive = new PWMSparkMax(3); 
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftFrontDrive, m_rightFrontDrive);
   private final XboxController m_controller = new XboxController(0);
+  private final Joystick m_joystick = new Joystick(4);
   private final Timer m_timer = new Timer();
+
+  private final Encoder m_encoder = new Encoder(0, 1);
 
   private double speed = 0;
   private double turn = 0;
-  
 
+  private int phase = 0;
+  
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
   private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
   private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
@@ -54,6 +68,9 @@ public class Robot extends TimedRobot {
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
+
+
+
   @Override
   public void robotInit() {
     // We need to invert one side of the drivetrain so that positive voltages
@@ -62,7 +79,12 @@ public class Robot extends TimedRobot {
     m_rightFrontDrive.setInverted(true);
     m_rightBackDrive.setInverted(true);
 
-    m_visionThread =
+    // encoder set distance thingy
+
+    m_encoder.setDistancePerPulse(1./256.);
+
+    //
+    Thread m_visionThread =
     new Thread(
             () -> {
               var camera = CameraServer.startAutomaticCapture();
@@ -160,6 +182,8 @@ public class Robot extends TimedRobot {
     m_visionThread.start();
   }
 
+
+
   /** This function is run once each time the robot enters autonomous mode. */
   @Override
   public void autonomousInit() {
@@ -170,13 +194,29 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // Drive for 2 seconds
-    if (m_timer.get() < 2.0) {
+    
+    // phase 1
+    if ((m_encoder.getDistance() <= 2) && (phase == 0)) {
       // Drive forwards half speed, make sure to turn input squaring off
-      m_robotDrive.arcadeDrive(0.5, 0.0, false);
+      
+      speed = 0.5;
+      turn = 0.5;
+
     } else {
-      m_robotDrive.stopMotor(); // stop robot
+      // m_robotDrive.stopMotor(); 
+      phase = phase + 1;
+      m_encoder.reset();
+
+      speed = 0;
+      turn = 0;
     }
+    
+    leftFrontMotor.accelerateSpeed(speed - turn);
+    leftBackMotor.accelerateSpeed(speed - turn);
+    rightFrontMotor.accelerateSpeed(speed - turn);
+    rightBackMotor.accelerateSpeed(speed - turn);
+
+    // phase 2
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
@@ -188,7 +228,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if (!(Math.abs(m_controller.getLeftY()) < 0.05) && !(Math.abs(m_controller.getRightX()) < 0.05)) {
+    if (!(Math.abs(m_joystick.getRawAxis(1)) < 0.05) && !(Math.abs(m_joystick.getRawAxis(2)) < 0.05)) {
       
       speed = -m_controller.getLeftY();  // note - using xbox controller 
       turn = -m_controller.getRightX(); // note - using xbox controller
