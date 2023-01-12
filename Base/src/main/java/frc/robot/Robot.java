@@ -4,12 +4,23 @@
 
 package frc.robot;
 
+import java.net.ServerSocket;
+
+//import com.ctre.phoenix.motorcontrol.ControlMode;
+//import com.ctre.phoenix.motorcontrol.can.TalenSRX;
+
 import edu.wpi.first.hal.ThreadsJNI;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.Joystick;
+
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
+// import com.ctri?.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 import java.lang.Math;
 
@@ -21,23 +32,33 @@ import java.lang.Math;
  */
 
 public class Robot extends TimedRobot {
-  private final PWMSparkMax m_leftFrontDrive = new PWMSparkMax(0);
-  private final PWMSparkMax m_leftBackDrive = new PWMSparkMax(1);  
-  private final PWMSparkMax m_rightFrontDrive = new PWMSparkMax(2);
-  private final PWMSparkMax m_rightBackDrive = new PWMSparkMax(3); 
-  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftFrontDrive, m_rightFrontDrive);
-  private final XboxController m_controller = new XboxController(0);
+  private final PWMVictorSPX m_leftFrontDrive = new PWMVictorSPX(0);
+  private final PWMVictorSPX m_leftBackDrive = new PWMVictorSPX(1); 
+
+  MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
+
+  private final PWMVictorSPX m_rightFrontDrive = new PWMVictorSPX(2);
+  private final PWMVictorSPX m_rightBackDrive = new PWMVictorSPX(3); 
+
+  MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
+
+  DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
+
+  private final Joystick m_controller = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
   private double turn = 0;
   
-
+/** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
   private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
   private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
   private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
+*/
 
+  private MotorAccel speedAccel = new MotorAccel();
+  private MotorAccel turnAccel = new MotorAccel();
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -64,9 +85,8 @@ public class Robot extends TimedRobot {
     // Drive for 2 seconds
     if (m_timer.get() < 2.0) {
       // Drive forwards half speed, make sure to turn input squaring off
-      m_robotDrive.arcadeDrive(0.5, 0.0, false);
+
     } else {
-      m_robotDrive.stopMotor(); // stop robot
     }
   }
 
@@ -79,16 +99,13 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if (!(Math.abs(m_controller.getLeftY()) < 0.05) && !(Math.abs(m_controller.getRightX()) < 0.05)) {
+    if (!(Math.abs(m_controller.getRawAxis(1)) < 0.05) && !(Math.abs(m_controller.getRawAxis(2)) < 0.05)) {
       
-      speed = -m_controller.getLeftY();  // note - using xbox controller 
-      turn = -m_controller.getRightX(); // note - using xbox controller
+      speed = -m_controller.getRawAxis(1);  // note - using xbox controller 
+      turn = -m_controller.getRawAxis(2); // note - using xbox controller
 
-      leftFrontMotor.accelerateSpeed(speed + turn);
-      leftBackMotor.accelerateSpeed(speed + turn);
-      rightFrontMotor.accelerateSpeed(speed - turn);
-      rightBackMotor.accelerateSpeed(speed - turn);
-  
+      m_drive.arcadeDrive(speedAccel.accelerateSpeed(speed),turnAccel.accelerateSpeed(turn));
+
       // old code
 
       // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
@@ -114,27 +131,27 @@ class MotorAccel {
 
   public double motorSpeed = 0;
 
-  public PWMSparkMax MotorName;
-
-
-  MotorAccel(PWMSparkMax MotorTempName) {
-    MotorName = MotorTempName;    
+  
+  MotorAccel() {   
     motorTimer.reset();
     motorTimer.start();
   }
+  
 
-  public void accelerateSpeed(double desiredSpeed) {
+  public double accelerateSpeed(double desiredSpeed) {
     if (motorTimer.get() >= accelerationTime) {
       if (Math.abs(desiredSpeed-motorSpeed) < accelerationIncrement) {
-        motorSpeed = desiredSpeed;
+       motorSpeed = desiredSpeed;
       } else {
         motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
       }
       
-      MotorName.set(desiredSpeed);
-
       motorTimer.reset();
+
     }
 
+    return motorSpeed;
+
   }
+  
 }
