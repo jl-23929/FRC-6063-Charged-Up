@@ -13,6 +13,7 @@ import edu.wpi.first.hal.ThreadsJNI;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -20,7 +21,11 @@ import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
-// import com.ctri?.phoenix.motorcontrol.can.WPI_VictorSPX;
+import edu.wpi.first.wpilibj.CAN;
+
+import com.ctre.phoenix.motorcontrol.InvertType;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 import java.lang.Math;
 
@@ -32,19 +37,19 @@ import java.lang.Math;
  */
 
 public class Robot extends TimedRobot {
-  private final PWMVictorSPX m_leftFrontDrive = new PWMVictorSPX(0);
-  private final PWMVictorSPX m_leftBackDrive = new PWMVictorSPX(1); 
+  private final WPI_VictorSPX m_leftFrontDrive = new WPI_VictorSPX(0, "rio");
+  private final WPI_VictorSPX m_leftBackDrive = new WPI_VictorSPX(1, "rio"); 
 
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
-  private final PWMVictorSPX m_rightFrontDrive = new PWMVictorSPX(2);
-  private final PWMVictorSPX m_rightBackDrive = new PWMVictorSPX(3); 
+  private final WPI_VictorSPX m_rightFrontDrive = new WPI_VictorSPX(2);
+  private final WPI_VictorSPX m_rightBackDrive = new WPI_VictorSPX(3); 
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
 
-  private final Joystick m_controller = new Joystick(1);
+  private final Joystick m_controller = new Joystick(0);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
@@ -104,12 +109,17 @@ public class Robot extends TimedRobot {
       speed = -m_controller.getRawAxis(1);  // note - using xbox controller 
       turn = -m_controller.getRawAxis(2); // note - using xbox controller
 
-      m_drive.arcadeDrive(speedAccel.accelerateSpeed(speed),turnAccel.accelerateSpeed(turn));
+      
 
       // old code
 
       // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
+    } else {
+      speed = 0;
+      turn = 0;
     }
+
+    m_drive.arcadeDrive(speedAccel.accelerateSpeed(speed)+turnAccel.accelerateSpeed(turn),speedAccel.accelerateSpeed(speed)-turnAccel.accelerateSpeed(turn));
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -123,9 +133,9 @@ public class Robot extends TimedRobot {
 }
 
 class MotorAccel {
-  private final double accelerationIncrement = 0.1;
+  private final double accelerationIncrement = 0.2;
 
-  private final double accelerationTime = 0.15; 
+  private final double accelerationTime = 0.08; 
 
   private Timer motorTimer = new Timer();
 
