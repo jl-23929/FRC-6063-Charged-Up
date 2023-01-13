@@ -54,6 +54,8 @@ public class Robot extends TimedRobot {
 
   private double speed = 0;
   private double turn = 0;
+
+  private double speedMultiplier = 1;
   
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
@@ -73,8 +75,8 @@ public class Robot extends TimedRobot {
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    m_rightFrontDrive.setInverted(true);
-    m_rightBackDrive.setInverted(true);
+   // m_rightFrontDrive.setInverted(true);
+   // m_rightBackDrive.setInverted(true);
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -104,10 +106,15 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if (!(Math.abs(m_controller.getRawAxis(1)) < 0.05) || !(Math.abs(m_controller.getRawAxis(2)) < 0.05)) {
+    // set throttle
+
+    speedMultiplier = 0.5 + ((1-m_controller.getThrottle())-0.5)/2;
+    // controller speed
+
+    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
       
-      speed = -m_controller.getRawAxis(1);  // note - using xbox controller 
-      turn = -m_controller.getRawAxis(0); // note - using xbox controller
+      speed = m_controller.getY();  // note - using xbox controller 
+      turn = m_controller.getZ(); // note - using xbox controller
 
       
 
@@ -117,9 +124,9 @@ public class Robot extends TimedRobot {
     } else {
       speed = 0;
       turn = 0;
-    }
+    } 
 
-    m_drive.arcadeDrive((speedAccel.accelerateSpeed(speed)+turnAccel.accelerateSpeed(turn))/1.2,(speedAccel.accelerateSpeed(speed)-turnAccel.accelerateSpeed(turn))/1.2);
+    m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn))*speedMultiplier*0.7,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.3);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -133,9 +140,9 @@ public class Robot extends TimedRobot {
 }
 
 class MotorAccel {
-  private final double accelerationIncrement = 0.2;
+  private final double accelerationIncrement = 0.5;
 
-  private final double accelerationTime = 0.17; 
+  private final double accelerationTime = 0.2; 
 
   private Timer motorTimer = new Timer();
 
