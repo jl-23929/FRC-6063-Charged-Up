@@ -37,13 +37,13 @@ import java.lang.Math;
  */
 
 public class Robot extends TimedRobot {
-  private final WPI_VictorSPX m_leftFrontDrive = new WPI_VictorSPX(0, "rio");
-  private final WPI_VictorSPX m_leftBackDrive = new WPI_VictorSPX(1, "rio"); 
+  private final WPI_VictorSPX m_leftFrontDrive = new WPI_VictorSPX(5);
+  private final WPI_VictorSPX m_leftBackDrive = new WPI_VictorSPX(6); 
 
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
-  private final WPI_VictorSPX m_rightFrontDrive = new WPI_VictorSPX(2);
-  private final WPI_VictorSPX m_rightBackDrive = new WPI_VictorSPX(3); 
+  private final WPI_VictorSPX m_rightFrontDrive = new WPI_VictorSPX(7);
+  private final WPI_VictorSPX m_rightBackDrive = new WPI_VictorSPX(8); 
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
@@ -104,10 +104,10 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if (!(Math.abs(m_controller.getRawAxis(1)) < 0.05) && !(Math.abs(m_controller.getRawAxis(2)) < 0.05)) {
+    if (!(Math.abs(m_controller.getRawAxis(1)) < 0.05) || !(Math.abs(m_controller.getRawAxis(2)) < 0.05)) {
       
       speed = -m_controller.getRawAxis(1);  // note - using xbox controller 
-      turn = -m_controller.getRawAxis(2); // note - using xbox controller
+      turn = -m_controller.getRawAxis(0); // note - using xbox controller
 
       
 
@@ -119,7 +119,7 @@ public class Robot extends TimedRobot {
       turn = 0;
     }
 
-    m_drive.arcadeDrive(speedAccel.accelerateSpeed(speed)+turnAccel.accelerateSpeed(turn),speedAccel.accelerateSpeed(speed)-turnAccel.accelerateSpeed(turn));
+    m_drive.arcadeDrive((speedAccel.accelerateSpeed(speed)+turnAccel.accelerateSpeed(turn))/1.2,(speedAccel.accelerateSpeed(speed)-turnAccel.accelerateSpeed(turn))/1.2);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -135,7 +135,7 @@ public class Robot extends TimedRobot {
 class MotorAccel {
   private final double accelerationIncrement = 0.2;
 
-  private final double accelerationTime = 0.08; 
+  private final double accelerationTime = 0.17; 
 
   private Timer motorTimer = new Timer();
 
