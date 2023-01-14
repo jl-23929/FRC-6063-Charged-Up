@@ -108,7 +108,7 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // set throttle
 
-    speedMultiplier = 0.5 + ((1-m_controller.getThrottle())-0.5)/2;
+    speedMultiplier = 0.75 + ((1-m_controller.getThrottle()))/3.67;
     // controller speed
 
     if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
@@ -125,8 +125,7 @@ public class Robot extends TimedRobot {
       speed = 0;
       turn = 0;
     } 
-
-    m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn))*speedMultiplier*0.7,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.3);
+    m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -140,7 +139,7 @@ public class Robot extends TimedRobot {
 }
 
 class MotorAccel {
-  private final double accelerationIncrement = 0.5;
+  private double accelerationIncrement = 0.5;
 
   private final double accelerationTime = 0.2; 
 
@@ -157,16 +156,17 @@ class MotorAccel {
 
   public double accelerateSpeed(double desiredSpeed) {
     if (motorTimer.get() >= accelerationTime) {
-      if (Math.abs(desiredSpeed-motorSpeed) < accelerationIncrement) {
-       motorSpeed = desiredSpeed;
+      accelerationIncrement = (1.5-Math.abs(motorSpeed))*0.6;
+
+      if (Math.abs(desiredSpeed-motorSpeed) <= accelerationIncrement) {
+       motorSpeed = desiredSpeed; 
       } else {
         motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
       }
       
       motorTimer.reset();
 
-    }
-
+    } 
     return motorSpeed;
 
   }
