@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj.CAN;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import java.lang.Math;
 
@@ -37,13 +38,13 @@ import java.lang.Math;
  */
 
 public class Robot extends TimedRobot {
-  private final WPI_VictorSPX m_leftFrontDrive = new WPI_VictorSPX(5);
-  private final WPI_VictorSPX m_leftBackDrive = new WPI_VictorSPX(6); 
+  private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
+  private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
 
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
-  private final WPI_VictorSPX m_rightFrontDrive = new WPI_VictorSPX(7);
-  private final WPI_VictorSPX m_rightBackDrive = new WPI_VictorSPX(8); 
+  private final WPI_TalonSRX m_rightFrontDrive = new WPI_TalonSRX(23);
+  private final WPI_TalonSRX m_rightBackDrive = new WPI_TalonSRX(22); 
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
@@ -55,7 +56,7 @@ public class Robot extends TimedRobot {
   private double speed = 0;
   private double turn = 0;
 
-  private double speedMultiplier = 1;
+  private double speedMultiplier = 1;  
   
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
