@@ -28,6 +28,8 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+import frc.robot.subsystems.DriveSubsystem;
+
 import java.lang.Math;
 
 /**
@@ -57,6 +59,8 @@ public class Robot extends TimedRobot {
   private double turn = 0;
 
   private double speedMultiplier = 1;  
+
+  public static final DriveSubsystem m_driveSubsystem = new DriveSubsystem(); // Drivetrain subsyste
   
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
@@ -85,6 +89,8 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     m_timer.reset();
     m_timer.start();
+
+
   }
 
   /** This function is called periodically during autonomous. */
@@ -117,10 +123,7 @@ public class Robot extends TimedRobot {
       speed = m_controller.getY();  // note - using xbox controller 
       turn = m_controller.getZ(); // note - using xbox controller
 
-      
-
       // old code
-
       // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
     } else {
       speed = 0;
