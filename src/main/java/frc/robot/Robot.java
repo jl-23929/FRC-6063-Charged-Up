@@ -78,6 +78,8 @@ public class Robot extends TimedRobot {
     // gearbox is constructed, you might have to invert the left side instead.
    // m_rightFrontDrive.setInverted(true);
    // m_rightBackDrive.setInverted(true);
+    
+    CameraServer.startAutomaticCapture();
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
