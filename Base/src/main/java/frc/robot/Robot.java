@@ -6,8 +6,6 @@ package frc.robot;
 
 import java.net.ServerSocket;
 
-import javax.lang.model.util.ElementScanner14;
-
 //import com.ctre.phoenix.motorcontrol.ControlMode;
 //import com.ctre.phoenix.motorcontrol.can.TalenSRX;
 
@@ -19,24 +17,19 @@ import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
-
+import edu.wpi.first.wpilibj.CAN;
+import edu.wpi.first.wpilibj.Encoder;
 
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
-import com.kauailabs.navx.frc.AHRS;
-//import frc.robot.subsystems.DriveSubsystem;
-
-//import com.kauailabs.navx.frc.AHRS;
-
-
+// import frc.robot.subsystems.DriveSubsystem;
 
 import java.lang.Math;
 
@@ -66,12 +59,17 @@ public class Robot extends TimedRobot {
   private double speed = 0;
   private double turn = 0;
 
-  private double speedMultiplier = 1;  
+  // auto variables
+
+  private double phase = 0;
+
+  private double speedMultiplier = 1; 
+  
+  private final Encoder m_encoder = new Encoder(0, 1);
+
+  
 
   // public static final DriveSubsystem m_driveSubsystem = new DriveSubsystem(); // Drivetrain subsyste
-
-  private final AHRS gyro = new AHRS(/*may need stuff in here */);
-  
   
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
@@ -108,11 +106,21 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     // Drive for 2 seconds
-    if (m_timer.get() < 2.0) {
-      // Drive forwards half speed, make sure to turn input squaring off
-
+    
+    if ((m_encoder.getDistance() <= 2) && (phase == 0)) {
+      m_drive.arcadeDrive(0, 0.1);
+      // also do arm stuff
+    } else if ((m_encoder.getDistance() <= 1) && (phase == 1)) {
+      m_drive.arcadeDrive(0.1, 0);
+    
+    
     } else {
+      // m_robotDrive.stopMotor(); 
+      phase = phase + 1;
+      m_encoder.reset();
     }
+
+
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
@@ -145,25 +153,12 @@ public class Robot extends TimedRobot {
 
   /** This function is called once each time the robot enters test mode. */
   @Override
-  public void testInit() {
-    gyro.calibrate();
-  }
+  public void testInit() {}
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {
-    
-    if ((gyro.getPitch() >= 13) && (gyro.getPitch() <= 20)) {
-      m_drive.arcadeDrive(0.1, 0.1);
-    } else if ((gyro.getPitch() >= 341) && (gyro.getPitch() <= 345)) {
-      m_drive.arcadeDrive(-0.1, -0.1);
-    } else if ((gyro.getPitch() >= -4) && (gyro.getPitch() <= 4)) {
-      m_drive.arcadeDrive(0, 0);
-    } else {
-      m_drive.arcadeDrive(0.05, 0.05);
-    }
-    
-  }
+  public void testPeriodic() {}
+
 }
 
 class MotorAccel {
