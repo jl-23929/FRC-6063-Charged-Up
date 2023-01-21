@@ -1,0 +1,190 @@
+Version 5.0
+
+---
+Children:
+- Children:
+  - Children:
+    - Children:
+      - Children:
+        - Children: []
+          Properties:
+            CAN ID: !!robotbuilder.data.properties.ChoicesProperty
+              choices: &id001 ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+                '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21',
+                '22', '23', '24', '25', '26', '27', '28', '29', '30', '31']
+              default: '2'
+              name: CAN ID
+              validators: &id002 [CANID]
+              value: '20'
+          Base: Talon SRX
+          Name: m_leftFrontDrive
+        - Children: []
+          Properties:
+            CAN ID: !!robotbuilder.data.properties.ChoicesProperty
+              choices: *id001
+              default: '2'
+              name: CAN ID
+              validators: *id002
+              value: '21'
+          Base: Talon SRX
+          Name: m_leftBackDrive
+        Properties:
+          MotorController2: !!robotbuilder.data.properties.ChildSelectionProperty
+            default: 1
+            name: MotorController2
+            type: PIDOutput
+            validators: &id003 [MotorControllerGroup, ChildDropdownSelected]
+            value: m_leftBackDrive
+          MotorController1: !!robotbuilder.data.properties.ChildSelectionProperty
+            default: 0
+            name: MotorController1
+            type: PIDOutput
+            validators: &id004 [MotorControllerGroup, ChildDropdownSelected]
+            value: m_leftFrontDrive
+          MotorController4: !!robotbuilder.data.properties.ChildSelectionProperty {
+            default: null, name: MotorController4, type: PIDOutput, validators: null,
+            value: null}
+          MotorController3: !!robotbuilder.data.properties.ChildSelectionProperty {
+            default: null, name: MotorController3, type: PIDOutput, validators: null,
+            value: null}
+        Base: Motor Controller Group
+        Name: Motor Controller Group 1
+      - Children:
+        - Children: []
+          Properties:
+            CAN ID: !!robotbuilder.data.properties.ChoicesProperty
+              choices: *id001
+              default: '2'
+              name: CAN ID
+              validators: *id002
+              value: '23'
+          Base: Talon SRX
+          Name: m_rightFrontDrive
+        - Children: []
+          Properties:
+            CAN ID: !!robotbuilder.data.properties.ChoicesProperty
+              choices: *id001
+              default: '2'
+              name: CAN ID
+              validators: *id002
+              value: '22'
+          Base: Talon SRX
+          Name: m_rightBackDrive
+        Properties:
+          MotorController2: !!robotbuilder.data.properties.ChildSelectionProperty
+            default: 1
+            name: MotorController2
+            type: PIDOutput
+            validators: *id003
+            value: m_rightBackDrive
+          MotorController1: !!robotbuilder.data.properties.ChildSelectionProperty
+            default: 0
+            name: MotorController1
+            type: PIDOutput
+            validators: *id004
+            value: m_rightFrontDrive
+          MotorController4: !!robotbuilder.data.properties.ChildSelectionProperty {
+            default: null, name: MotorController4, type: PIDOutput, validators: null,
+            value: null}
+          MotorController3: !!robotbuilder.data.properties.ChildSelectionProperty {
+            default: null, name: MotorController3, type: PIDOutput, validators: null,
+            value: null}
+        Base: Motor Controller Group
+        Name: Motor Controller Group 2
+      Properties:
+        Right Motor: !!robotbuilder.data.properties.ChildSelectionProperty
+          default: 1
+          name: Right Motor
+          type: PIDOutput
+          validators: [RobotDrive2, ChildDropdownSelected]
+          value: Motor Controller Group 2
+        Maximum Output: !!robotbuilder.data.properties.DoubleProperty {default: 1,
+          name: Maximum Output, validators: null, value: 1.0}
+        Left Motor: !!robotbuilder.data.properties.ChildSelectionProperty
+          default: 0
+          name: Left Motor
+          type: PIDOutput
+          validators: [RobotDrive2, ChildDropdownSelected]
+          value: Motor Controller Group 1
+        Safety Expiration Time: !!robotbuilder.data.properties.DoubleProperty {default: 0.1,
+          name: Safety Expiration Time, validators: null, value: 0.1}
+        Safety Enabled: !!robotbuilder.data.properties.BooleanProperty {default: true,
+          name: Safety Enabled, validators: null, value: true}
+      Base: Differential Drive
+      Name: Differential Drive 1
+    Properties:
+      Send to SmartDashboard: !!robotbuilder.data.properties.BooleanProperty {default: false,
+        name: Send to SmartDashboard, validators: null, value: false}
+      Default command parameters: !!robotbuilder.data.properties.ParametersProperty
+        default: []
+        name: Default command parameters
+        validators: null
+        value: []
+      Default Command: !!robotbuilder.data.properties.TypeSelectionProperty {default: None,
+        name: Default Command, type: Command, validators: null, value: None}
+      Constants: !!robotbuilder.data.properties.ConstantsProperty
+        default: []
+        name: Constants
+        validators: null
+        value: []
+    Base: Subsystem
+    Name: Subsystem 1
+  Properties: {}
+  Base: Subsystems
+  Name: Subsystems
+- Children: []
+  Properties: {}
+  Base: OI
+  Name: Operator Interface
+- Children:
+  - Children: []
+    Properties:
+      Autonomous Selection: !!robotbuilder.data.properties.BooleanProperty {default: false,
+        name: Autonomous Selection, validators: null, value: false}
+      Parameters: !!robotbuilder.data.properties.ParametersProperty
+        default: []
+        name: Parameters
+        validators: null
+        value: []
+      Run When Disabled: !!robotbuilder.data.properties.BooleanProperty {default: false,
+        name: Run When Disabled, validators: null, value: false}
+      Requires: !!robotbuilder.data.properties.TypeSelectionProperty {default: None,
+        name: Requires, type: Subsystem, validators: null, value: None}
+      Parameter presets: !!robotbuilder.data.properties.ParameterSetProperty
+        default: []
+        name: Parameter presets
+        validators: null
+        value: []
+      Button on SmartDashboard: !!robotbuilder.data.properties.BooleanProperty {default: true,
+        name: Button on SmartDashboard, validators: null, value: true}
+    Base: Command
+    Name: Autonomous Command
+  Properties: {}
+  Base: Commands
+  Name: Commands
+Properties:
+  Export Commands: !!robotbuilder.data.properties.BooleanProperty {default: true,
+    name: Export Commands, validators: null, value: true}
+  Desktop Support: !!robotbuilder.data.properties.BooleanProperty {default: false,
+    name: Desktop Support, validators: null, value: false}
+  Autonomous command parameters: !!robotbuilder.data.properties.ParametersProperty
+    default: []
+    name: Autonomous command parameters
+    validators: null
+    value: []
+  Java Package: !!robotbuilder.data.properties.StringProperty {default: frc.robot,
+    name: Java Package, validators: null, value: org.usfirst.frc6063}
+  Use Default Java Package: !!robotbuilder.data.properties.BooleanProperty {default: true,
+    name: Use Default Java Package, validators: null, value: true}
+  Team Number: !!robotbuilder.data.properties.TeamNumberProperty {default: 0, name: Team
+      Number, validators: null, value: 6063}
+  Export Subsystems: !!robotbuilder.data.properties.BooleanProperty {default: true,
+    name: Export Subsystems, validators: null, value: true}
+  Wiring file location: !!robotbuilder.data.properties.FileProperty {default: 'C:\Users\james680384\',
+    extension: null, folder: true, name: Wiring file location, validators: null, value: .\}
+  Export Directory: !!robotbuilder.data.properties.FileProperty {default: 'C:\Users\james680384\FRCProjects',
+    extension: null, folder: true, name: Export Directory, validators: null, value: 'C:\Users\james680384\FRCProjects'}
+  Autonomous Command: !!robotbuilder.data.properties.TypeSelectionProperty {default: None,
+    name: Autonomous Command, type: Command, validators: null, value: Autonomous Command}
+Base: Robot
+Name: ChargedUp
