@@ -6,6 +6,8 @@ package frc.robot;
 
 import java.net.ServerSocket;
 
+import edu.wpi.first.cameraserver.CameraServer;
+
 //import com.ctre.phoenix.motorcontrol.ControlMode;
 //import com.ctre.phoenix.motorcontrol.can.TalenSRX;
 
@@ -14,13 +16,17 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.CAN;
+
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
+
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
@@ -28,6 +34,9 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
+import com.kauailabs.navx.frc.AHRS;
+
 
 // import frc.robot.subsystems.DriveSubsystem;
 
@@ -67,7 +76,10 @@ public class Robot extends TimedRobot {
   
   private final Encoder m_encoder = new Encoder(0, 1);
 
-  
+
+  // gyro
+
+  AHRS robotGyro = new AHRS();
 
   // public static final DriveSubsystem m_driveSubsystem = new DriveSubsystem(); // Drivetrain subsyste
   
@@ -86,6 +98,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
@@ -106,7 +119,11 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     // Drive for 2 seconds
+    SmartDashboard.putString("DB/String 0",String.valueOf(robotGyro.getPitch()));
+    SmartDashboard.putString("DB/String 1", String.valueOf(robotGyro.getYaw()));
+    SmartDashboard.putString("DB/String 2", String.valueOf(robotGyro.getRoll()));
     
+    /** 
     if ((m_encoder.getDistance() <= 2) && (phase == 0)) {
       m_drive.arcadeDrive(0, 0.1);
       // also do arm stuff
@@ -119,7 +136,7 @@ public class Robot extends TimedRobot {
       phase = phase + 1;
       m_encoder.reset();
     }
-
+    */
 
   }
 
@@ -157,7 +174,12 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+
+    SmartDashboard.putNumber("DB/String 0", robotGyro.getPitch());
+    SmartDashboard.putNumber("DB/String 1", robotGyro.getYaw());
+    SmartDashboard.putNumber("DB/String 2", robotGyro.getRoll());
+  }
 
 }
 
