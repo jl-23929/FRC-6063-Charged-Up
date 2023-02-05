@@ -21,14 +21,26 @@ import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
-import edu.wpi.first.wpilibj.CAN;
+import edu.wpi.first.math.controller.RamseteController;
+import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
+import com.pathplanner.lib.PathPlanner;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathConstraints;
+import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import java.lang.Math;
+import java.nio.file.FileSystem;
+import edu.wpi.first.math.trajectory.TrajectoryUtil;
+import edu.wpi.first.wpilibj.DriverStation;
+import java.io.IOException;
+import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrajectoryParameterizer;
+import java.nio.file.Path;
+import edu.wpi.first.wpilibj.Filesystem;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -57,7 +69,9 @@ public class Robot extends TimedRobot {
   private double turn = 0;
 
   private double speedMultiplier = 1;  
-  
+
+  String blueParkLocation = "pathplanner/generatedJSON/Park - Blue";
+  Trajectory bluePark = new Trajectory();  
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
   private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
@@ -79,14 +93,23 @@ public class Robot extends TimedRobot {
    // m_rightFrontDrive.setInverted(true);
    // m_rightBackDrive.setInverted(true);
     
-    CameraServer.startAutomaticCapture();
-  }
+   // CameraServer.startAutomaticCapture();
+   RamseteController controller1 = new RamseteController();
+   try {
+    Path blueParkPath = Filesystem.getDeployDirectory().toPath().resolve(blueParkLocation);
+    bluePark = TrajectoryUtil.fromPathweaverJson(blueParkPath);
+ } catch (IOException ex) {
+    DriverStation.reportError("Unable to open trajectory: " + blueParkLocation, ex.getStackTrace());
+ }
+}
+   TrajectoryConfig config = new TrajectoryConfig(4, 3);
+
+//  var trajectory = TrajectoryGenerator.generateTrajectory(bluePark, config);
+  
 
   /** This function is run once each time the robot enters autonomous mode. */
   @Override
   public void autonomousInit() {
-    m_timer.reset();
-    m_timer.start();
   }
 
   /** This function is called periodically during autonomous. */
@@ -94,7 +117,7 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     // Drive for 2 seconds
     if (m_timer.get() < 2.0) {
-      // Drive forwards half speed, make sure to turn input squaring off
+      // Drive forwards half speed, make sure to tufrc pathplarn input squaring off
 
     } else {
     }
