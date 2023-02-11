@@ -6,6 +6,11 @@ package frc.robot;
 
 import java.net.ServerSocket;
 
+import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+
 import edu.wpi.first.cameraserver.CameraServer;
 
 //import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -30,10 +35,17 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
+
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
+import edu.wpi.first.apriltag.AprilTagDetector;
+import edu.wpi.first.apriltag.AprilTagDetector.Config;;
 
 import com.kauailabs.navx.frc.AHRS;
 
@@ -60,7 +72,7 @@ public class Robot extends TimedRobot {
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
-  DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
+  DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
   private final Timer m_timer = new Timer();
@@ -75,6 +87,14 @@ public class Robot extends TimedRobot {
   private double speedMultiplier = 1; 
   
   private final Encoder m_encoder = new Encoder(0, 1);
+
+  private double initPitch;
+  private double initRoll;
+  private double initYaw;
+
+  private double zerodPitch;
+  private double zerodRoll;
+  private double zerodYaw;
 
 
   // gyro
@@ -99,6 +119,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
 
+    CameraServer.startAutomaticCapture();
+
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
@@ -112,6 +134,16 @@ public class Robot extends TimedRobot {
     m_timer.reset();
     m_timer.start();
 
+    robotGyro.calibrate();
+
+    initPitch = robotGyro.getPitch();
+    initRoll = robotGyro.getRoll();
+    initYaw = robotGyro.getYaw();
+
+    SmartDashboard.putString("DB/String 4", String.valueOf(robotGyro.getPitch()));
+
+    
+
 
   }
 
@@ -122,21 +154,32 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("DB/String 0",String.valueOf(robotGyro.getPitch()));
     SmartDashboard.putString("DB/String 1", String.valueOf(robotGyro.getYaw()));
     SmartDashboard.putString("DB/String 2", String.valueOf(robotGyro.getRoll()));
+
+
+
+    SmartDashboard.putString("DB/String 5", String.valueOf(robotGyro.getPitch()-initPitch));
+    SmartDashboard.putString("DB/String 6", String.valueOf(robotGyro.getRoll()-initRoll));
+    SmartDashboard.putString("DB/String 7", String.valueOf(robotGyro.getYaw()-initYaw));
+
+    zerodPitch = robotGyro.getPitch()-initPitch;
+    zerodRoll = robotGyro.getRoll()-initRoll;
+    zerodYaw = robotGyro.getYaw()-initYaw;
     
-    /** 
-    if ((m_encoder.getDistance() <= 2) && (phase == 0)) {
-      m_drive.arcadeDrive(0, 0.1);
+    
+    if ((zerodPitch <= 20) && (zerodPitch >= 13)) {
+      m_robotDrive.arcadeDrive(0.04, 0.04);
       // also do arm stuff
-    } else if ((m_encoder.getDistance() <= 1) && (phase == 1)) {
-      m_drive.arcadeDrive(0.1, 0);
+    } else if ((zerodPitch <= 20) && (zerodPitch >= 13)) {
+      m_robotDrive.arcadeDrive(-0.04, -0.04);
     
-    
+    } else if ((zerodPitch <= 5) && (zerodPitch >= -5)) {
+
+      m_robotDrive.arcadeDrive(0, 0);
     } else {
       // m_robotDrive.stopMotor(); 
-      phase = phase + 1;
-      m_encoder.reset();
+      m_robotDrive.arcadeDrive(0.04, 0.04);
     }
-    */
+    
 
   }
 
@@ -165,6 +208,14 @@ public class Robot extends TimedRobot {
       speed = 0;
       turn = 0;
     } 
+
+    if (m_controller.getRawButton(1) == true) {
+      if ((zerodYaw < 0.1) && (zerodYaw > -0.1)) {
+        speed = 0;
+        turn = 0.3;
+      }
+    }
+
     m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
