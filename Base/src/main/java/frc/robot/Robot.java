@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.controller.PIDController;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -109,7 +111,7 @@ public class Robot extends TimedRobot {
   
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
-  private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
+  private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive); 
   private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
   private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
 */
@@ -219,6 +221,7 @@ public class Robot extends TimedRobot {
     m_visionThread.setDaemon(true);
     m_visionThread.start();
 
+    pid.enableContinuousInput(-180, 180);
 
     
 
