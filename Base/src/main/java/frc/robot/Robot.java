@@ -58,6 +58,7 @@ import com.kauailabs.navx.frc.AHRS;
 // import frc.robot.subsystems.DriveSubsystem;
 
 import java.lang.Math;
+import java.lang.reflect.Array;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -100,6 +101,9 @@ public class Robot extends TimedRobot {
   private double zerodPitch;
   private double zerodRoll;
   private double zerodYaw;
+
+  private Array aprilTagDetections[];
+
   Thread m_visionThread;
 
 
@@ -107,8 +111,8 @@ public class Robot extends TimedRobot {
 
   AHRS robotGyro = new AHRS();
 
-  // public static final DriveSubsystem m_driveSubsystem = new DriveSubsystem(); // Drivetrain subsyste
-  
+  // public static final DriveSubsystem m_driveSubsystem = new DriveSubsystem(); // Drivetrain subsystem 
+
 /** 
   private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
   private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive); 
@@ -130,7 +134,10 @@ public class Robot extends TimedRobot {
           var camera = CameraServer.startAutomaticCapture();
 
           var cameraWidth = 640;
-          var cameraHeight = 480;
+          var cameraHeight = 360;
+
+          camera.setFPS(20);
+
 
           camera.setResolution(cameraWidth, cameraHeight);
 
@@ -207,6 +214,8 @@ public class Robot extends TimedRobot {
 
             for (var id : set){
               System.out.println("Tag: " + String.valueOf(id));
+
+              aprilTagDetections[1] = String.valueOf(id);
             }
 
             if (timer.advanceIfElapsed(1.0)){
@@ -216,7 +225,7 @@ public class Robot extends TimedRobot {
 
             outputStream.putFrame(mat);
           }
-          aprilTagDetector.close();
+          aprilTagDetector.close();      
         });
     m_visionThread.setDaemon(true);
     m_visionThread.start();
