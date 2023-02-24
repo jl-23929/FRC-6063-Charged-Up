@@ -35,13 +35,30 @@ import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import java.lang.Math;
 import java.nio.file.FileSystem;
 import edu.wpi.first.math.trajectory.TrajectoryUtil;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Encoder;
+
 import java.io.IOException;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryParameterizer;
 import java.nio.file.Path;
 import edu.wpi.first.wpilibj.Filesystem;
-
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
+import edu.wpi.first.math.trajectory.constraint.DifferentialDriveKinematicsConstraint;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.RobotController;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -50,77 +67,89 @@ import edu.wpi.first.wpilibj.Filesystem;
  */
 
 public class Robot extends TimedRobot {
+
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
-  private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
+  private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20);
 
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
   private final WPI_TalonSRX m_rightFrontDrive = new WPI_TalonSRX(23);
-  private final WPI_TalonSRX m_rightBackDrive = new WPI_TalonSRX(22); 
+  private final WPI_TalonSRX m_rightBackDrive = new WPI_TalonSRX(22);
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
-  DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
+  DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
   private final Timer m_timer = new Timer();
+  
+  private CANSparkMax m_rotation = new CANSparkMax(24, MotorType.kBrushless); //CAN ID may be changed.
+  private CANSparkMax m_arm = new CANSparkMax(25, MotorType.kBrushless);
+  private CANSparkMax m_armSlave = new CANSparkMax(26, MotorType.kBrushless);
 
   private double speed = 0;
   private double turn = 0;
 
-  private double speedMultiplier = 1;  
+  private double speedMultiplier = 1;
 
   String blueParkLocation = "pathplanner/generatedJSON/Park - Blue";
-  Trajectory bluePark = new Trajectory();  
-/** 
-  private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
-  private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
-  private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
-  private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
-*/
+  Trajectory bluePark = new Trajectory();
+  /** 
+    private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
+    private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
+    private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
+    private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
+  */
 
   private MotorAccel speedAccel = new MotorAccel();
   private MotorAccel turnAccel = new MotorAccel();
+  private RelativeEncoder armEncoder;
+  private RelativeEncoder rotationEncoder;
+  private SparkMaxPIDController m_armPIDController;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
   @Override
   public void robotInit() {
+
+     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
+
+    // autonomous chooser on the dashboard.
+
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-   // m_rightFrontDrive.setInverted(true);
-   // m_rightBackDrive.setInverted(true);
-    
-   // CameraServer.startAutomaticCapture();
-   RamseteController controller1 = new RamseteController();
-   try {
-    Path blueParkPath = Filesystem.getDeployDirectory().toPath().resolve(blueParkLocation);
-    bluePark = TrajectoryUtil.fromPathweaverJson(blueParkPath);
- } catch (IOException ex) {
-    DriverStation.reportError("Unable to open trajectory: " + blueParkLocation, ex.getStackTrace());
- }
-}
-   TrajectoryConfig config = new TrajectoryConfig(4, 3);
+    // m_rightFrontDrive.setInverted(true);
+    // m_rightBackDrive.setInverted(true);
 
-//  var trajectory = TrajectoryGenerator.generateTrajectory(bluePark, config);
-  
+    // CameraServer.startAutomaticCapture();
+    RamseteController controller1 = new RamseteController();
+    try {
+      Path blueParkPath = Filesystem.getDeployDirectory().toPath().resolve(blueParkLocation);
+      bluePark = TrajectoryUtil.fromPathweaverJson(blueParkPath);
+    } catch (IOException ex) {
+      DriverStation.reportError("Unable to open trajectory: " + blueParkLocation, ex.getStackTrace());
+    }
+    TrajectoryConfig config = new TrajectoryConfig(4, 3);
+
+    m_armSlave.follow(m_arm);
+
+    
+    m_armPIDController = m_arm.getPIDController();
+    armEncoder = m_arm.getEncoder();  
+    rotationEncoder = m_rotation.getEncoder();
+    
+  }
 
   /** This function is run once each time the robot enters autonomous mode. */
-  @Override
-  public void autonomousInit() {
-  }
+  @Override 
+  public void autonomousInit() {}
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // Drive for 2 seconds
-    if (m_timer.get() < 2.0) {
-      // Drive forwards half speed, make sure to tufrc pathplarn input squaring off
-
-    } else {
-    }
+ 
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
@@ -134,15 +163,13 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // set throttle
 
-    speedMultiplier = 0.75 + ((1-m_controller.getThrottle()))/3.67;
+    speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
     // controller speed
 
     if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
-      
-      speed = m_controller.getY();  // note - using xbox controller 
-      turn = m_controller.getZ(); // note - using xbox controller
 
-      
+      speed = m_controller.getY(); // note - using xbox controller 
+      turn = m_controller.getZ(); // note - using xbox controller
 
       // old code
 
@@ -150,8 +177,8 @@ public class Robot extends TimedRobot {
     } else {
       speed = 0;
       turn = 0;
-    } 
-    m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
+    }
+    m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn)) * (0.5 + speedMultiplier * 0.5) * 0.63, (speedAccel.accelerateSpeed(speed)) * (speedMultiplier) * 0.6);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -167,34 +194,32 @@ public class Robot extends TimedRobot {
 class MotorAccel {
   private double accelerationIncrement = 0.5;
 
-  private final double accelerationTime = 0.2; 
+  private final double accelerationTime = 0.2;
 
   private Timer motorTimer = new Timer();
 
   public double motorSpeed = 0;
 
-  
-  MotorAccel() {   
+  MotorAccel() {
     motorTimer.reset();
     motorTimer.start();
   }
-  
 
   public double accelerateSpeed(double desiredSpeed) {
     if (motorTimer.get() >= accelerationTime) {
-      accelerationIncrement = (1.5-Math.abs(motorSpeed))*0.6;
+      accelerationIncrement = (1.5 - Math.abs(motorSpeed)) * 0.6;
 
-      if (Math.abs(desiredSpeed-motorSpeed) <= accelerationIncrement) {
-       motorSpeed = desiredSpeed; 
+      if (Math.abs(desiredSpeed - motorSpeed) <= accelerationIncrement) {
+        motorSpeed = desiredSpeed;
       } else {
-        motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
+        motorSpeed = motorSpeed + accelerationIncrement * Math.signum(desiredSpeed - motorSpeed);
       }
-      
+
       motorTimer.reset();
 
-    } 
+    }
     return motorSpeed;
 
   }
-  
+
 }
