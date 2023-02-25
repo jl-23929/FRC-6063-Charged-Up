@@ -80,15 +80,21 @@ public class Robot extends TimedRobot {
 
   DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
-  private final Joystick m_controller = new Joystick(0);
+  private final Joystick m_controller1 = new Joystick(0);
+  private final Joystick m_controller2 = new Joystick(1);
   private final Timer m_timer = new Timer();
   
   private CANSparkMax m_rotation = new CANSparkMax(24, MotorType.kBrushless); //CAN ID may be changed.
   private CANSparkMax m_arm = new CANSparkMax(25, MotorType.kBrushless);
-  private CANSparkMax m_armSlave = new CANSparkMax(26, MotorType.kBrushless);
-
+  private CANSparkMax m_intake = new CANSparkMax(27, MotorType.kBrushed);
+  private CANSparkMax m_intakeRotation = new CANSparkMax(27, MotorType.kBrushed);
   private double speed = 0;
   private double turn = 0;
+  private double armSpeed  = 0;
+  private double rotationSpeed = 0;
+  private boolean intakePower = false;
+  private boolean intakePositiveRotationPower = false;
+  private boolean intakeNegativeRotationPower = false;
 
   private double speedMultiplier = 1;
 
@@ -105,7 +111,8 @@ public class Robot extends TimedRobot {
   private MotorAccel turnAccel = new MotorAccel();
   private RelativeEncoder armEncoder;
   private RelativeEncoder rotationEncoder;
-  private SparkMaxPIDController m_armPIDController;
+  private SparkMaxPIDController armPIDController;
+  private SparkMaxPIDController intakeEncoder;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -133,10 +140,8 @@ public class Robot extends TimedRobot {
     }
     TrajectoryConfig config = new TrajectoryConfig(4, 3);
 
-    m_armSlave.follow(m_arm);
-
     
-    m_armPIDController = m_arm.getPIDController();
+    armPIDController = m_arm.getPIDController();
     armEncoder = m_arm.getEncoder();  
     rotationEncoder = m_rotation.getEncoder();
     
@@ -163,14 +168,13 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // set throttle
 
-    speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
+    speedMultiplier = 0.75 + ((1 - m_controller1.getThrottle())) / 3.67;
     // controller speed
 
-    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
+    if (!(Math.abs(m_controller1.getZ()) < 0.05) || !(Math.abs(m_controller1.getY()) < 0.05)) {
 
-      speed = m_controller.getY(); // note - using xbox controller 
-      turn = m_controller.getZ(); // note - using xbox controller
-
+      speed = m_controller1.getY(); // note - using xbox controller 
+      turn = m_controller1.getZ(); // note - using xbox controller
       // old code
 
       // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
@@ -179,7 +183,26 @@ public class Robot extends TimedRobot {
       turn = 0;
     }
     m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn)) * (0.5 + speedMultiplier * 0.5) * 0.63, (speedAccel.accelerateSpeed(speed)) * (speedMultiplier) * 0.6);
+    armSpeed = m_controller2.getY();
+    rotationSpeed = m_controller2.getZ();
+    intakePower = m_controller2.getTrigger();
+    m_arm.set(armSpeed);
+    m_rotation.set(rotationSpeed);
+    if (intakePower = true) {
+      m_intake.set(1);
+    } else {
+      m_intake.set(0);
+    }
+    intakePositiveRotationPower = m_controller2.getRawButton(1);
+    if (intakePositiveRotationPower = true) {
+      m_intake.set(1);
+    } else if(intakeNegativeRotationPower =true) {
+      m_intake.set(-1);
+    } else {
+      m_intake.set(0);
+    }
   }
+
 
   /** This function is called once each time the robot enters test mode. */
   @Override
