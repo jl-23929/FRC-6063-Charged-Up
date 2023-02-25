@@ -102,6 +102,28 @@ public class Robot extends TimedRobot {
   private double zerodRoll;
   private double zerodYaw;
 
+  // pid stuff
+
+  static double balancekP = 0;
+  static double balancekI = 0;
+  static double balancekD = 0;
+
+  PIDController balancePID = new PIDController(balancekP, balancekI, balancekD);
+
+  private double balancePIDSpeed = 0;
+
+  static double rotatekP = 0;
+  static double rotatekI = 0;
+  static double rotatekD = 0;
+
+  PIDController rotatePID = new PIDController(rotatekP, rotatekI, rotatekD);
+
+  private double rotatePIDSpeed = 0;
+
+  private double rotateGoal = 0;
+
+
+
   private Array aprilTagDetections[];
 
   Thread m_visionThread;
@@ -127,7 +149,16 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
   @Override
+
+
   public void robotInit() {
+
+    robotGyro.calibrate();
+
+    initPitch = robotGyro.getPitch();
+    initRoll = robotGyro.getRoll();
+    initYaw = robotGyro.getYaw();    
+
     m_visionThread =
     new Thread(
         () -> {
@@ -241,20 +272,25 @@ public class Robot extends TimedRobot {
    // m_rightBackDrive.setInverted(true);
   }
 
+  public void robotPeriodic() {
+    zerodPitch = robotGyro.getPitch()-initPitch;
+    zerodRoll = robotGyro.getRoll()-initRoll;
+    zerodYaw = robotGyro.getYaw()-initYaw;
+
+    balancePIDSpeed = balancePID.calculate(zerodPitch, 0);
+    rotatePIDSpeed = rotatePID.calculate(zerodYaw, rotateGoal);
+	
+  }
+
   /** This function is run once each time the robot enters autonomous mode. */
   @Override
   public void autonomousInit() {
     m_timer.reset();
     m_timer.start();
 
-    robotGyro.calibrate();
-
-    initPitch = robotGyro.getPitch();
-    initRoll = robotGyro.getRoll();
-    initYaw = robotGyro.getYaw();
-
     SmartDashboard.putString("DB/String 4", String.valueOf(robotGyro.getPitch()));
-
+    
+    
 
   }
 
@@ -272,24 +308,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("DB/String 6", String.valueOf(robotGyro.getRoll()-initRoll));
     SmartDashboard.putString("DB/String 7", String.valueOf(robotGyro.getYaw()-initYaw));
 
-    zerodPitch = robotGyro.getPitch()-initPitch;
-    zerodRoll = robotGyro.getRoll()-initRoll;
-    zerodYaw = robotGyro.getYaw()-initYaw;
-    
-    
-    if ((zerodPitch <= 20) && (zerodPitch >= 13)) {
-      m_robotDrive.arcadeDrive(0.04, 0.04);
-      // also do arm stuff
-    } else if ((zerodPitch <= -13) && (zerodPitch >= -20)) {
-      m_robotDrive.arcadeDrive(-0.04, -0.04);
-    
-    } else if ((zerodPitch <= 5) && (zerodPitch >= -5)) {
-      m_robotDrive.arcadeDrive(0, 0);
-    } else {
-      // m_robotDrive.stopMotor(); 
-      m_robotDrive.arcadeDrive(0.04, 0.04);
-    }
-    
+    rotateGoal = 0
+
+    m_robotDrive.arcadeDrive(rotatePIDSpeed, balancePIDSpeed);
 
   }
 
@@ -319,11 +340,16 @@ public class Robot extends TimedRobot {
       turn = 0;
     } 
 
-    if (m_controller.getRawButton(1) == true) {
+    if (m_controller.getRawButton(2) == true) {
       if ((zerodYaw < 0.1) && (zerodYaw > -0.1)) {
         speed = 0;
-        turn = 0.3;
+        turn = rotatePIDSpeed;
       }
+    } 
+    
+    if (m_controller.getRawButton(1) == true) {
+      speed = balancePIDSpeed;
+	turn = 0;
     }
 
     m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
