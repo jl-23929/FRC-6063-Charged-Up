@@ -261,7 +261,7 @@ public class Robot extends TimedRobot {
     m_visionThread.setDaemon(true);
     m_visionThread.start();
 
-    pid.enableContinuousInput(-180, 180);
+    balancePID.enableContinuousInput(-180, 180);
 
     
 
