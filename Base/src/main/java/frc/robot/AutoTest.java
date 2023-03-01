@@ -67,7 +67,7 @@ import java.lang.reflect.Array;
  * directory.
  */
 
-public class Robot extends TimedRobot {
+public class AutoTest extends TimedRobot {
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
 

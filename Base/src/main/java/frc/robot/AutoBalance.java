@@ -67,7 +67,7 @@ import java.lang.reflect.Array;
  * directory.
  */
 
-public class Robot extends TimedRobot {
+public class AutoBalance extends TimedRobot {
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
 
@@ -159,108 +159,6 @@ public class Robot extends TimedRobot {
     initRoll = robotGyro.getRoll();
     initYaw = robotGyro.getYaw();    
 
-    m_visionThread =
-    new Thread(
-        () -> {
-          var camera = CameraServer.startAutomaticCapture();
-
-          var cameraWidth = 640;
-          var cameraHeight = 360;
-
-          camera.setFPS(20);
-
-
-          camera.setResolution(cameraWidth, cameraHeight);
-
-          var cvSink = CameraServer.getVideo();
-          var outputStream = CameraServer.putVideo("RioApriltags", cameraWidth, cameraHeight);
-
-          var mat = new Mat();
-          var grayMat = new Mat();
-
-          var pt0 = new Point();
-          var pt1 = new Point();
-          var pt2 = new Point();
-          var pt3 = new Point();
-          var center = new Point();
-          var red = new Scalar(0, 0, 255);
-          var green = new Scalar(0, 255, 0);
-
-          var aprilTagDetector = new AprilTagDetector();
-
-          var config = aprilTagDetector.getConfig();
-          config.quadSigma = 0.8f;
-          aprilTagDetector.setConfig(config);
-
-          var quadThreshParams = aprilTagDetector.getQuadThresholdParameters();
-          quadThreshParams.minClusterPixels = 250;
-          quadThreshParams.criticalAngle *= 5; // default is 10
-          quadThreshParams.maxLineFitMSE *= 1.5;
-          aprilTagDetector.setQuadThresholdParameters(quadThreshParams);
-
-          aprilTagDetector.addFamily("tag16h5");
-
-          var timer = new Timer();
-          timer.start();
-          var count = 0;
-
-          while (!Thread.interrupted()) {
-            if (cvSink.grabFrame(mat) == 0) {
-              outputStream.notifyError(cvSink.getError());
-              continue;
-            }
-
-            Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_RGB2GRAY);
-
-            var results = aprilTagDetector.detect(grayMat);
-
-            var set = new HashSet<>();
-
-            for (var result: results) {
-              count += 1;
-              pt0.x = result.getCornerX(0);
-              pt1.x = result.getCornerX(1);
-              pt2.x = result.getCornerX(2);
-              pt3.x = result.getCornerX(3);
-
-              pt0.y = result.getCornerY(0);
-              pt1.y = result.getCornerY(1);
-              pt2.y = result.getCornerY(2);
-              pt3.y = result.getCornerY(3);
-
-              center.x = result.getCenterX();
-              center.y = result.getCenterY();
-
-              set.add(result.getId());
-
-              Imgproc.line(mat, pt0, pt1, red, 5);
-              Imgproc.line(mat, pt1, pt2, red, 5);
-              Imgproc.line(mat, pt2, pt3, red, 5);
-              Imgproc.line(mat, pt3, pt0, red, 5);
-
-              Imgproc.circle(mat, center, 4, green);
-              Imgproc.putText(mat, String.valueOf(result.getId()), pt2, Imgproc.FONT_HERSHEY_SIMPLEX, 2, green, 7);
-
-            };
-
-            for (var id : set){
-              System.out.println("Tag: " + String.valueOf(id));
-
-              aprilTagDetections[1] = String.valueOf(id);
-            }
-
-            if (timer.advanceIfElapsed(1.0)){
-              System.out.println("detections per second: " + String.valueOf(count));
-              count = 0;
-            }
-
-            outputStream.putFrame(mat);
-          }
-          aprilTagDetector.close();      
-        });
-    m_visionThread.setDaemon(true);
-    m_visionThread.start();
-
     balancePID.enableContinuousInput(-180, 180);
 
     
@@ -323,36 +221,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    // set throttle
 
-    speedMultiplier = 0.75 + ((1-m_controller.getThrottle()))/3.67;
-    // controller speed
-
-    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
-      
-      speed = m_controller.getY();  // note - using xbox controller 
-      turn = m_controller.getZ(); // note - using xbox controller
-
-      // old code
-      // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
-    } else {
-      speed = 0;
-      turn = 0;
-    } 
-
-    if (m_controller.getRawButton(2) == true) {
-      if ((zerodYaw < 0.1) && (zerodYaw > -0.1)) {
-        speed = 0;
-        turn = rotatePIDSpeed;
-      }
-    } 
-    
-    if (m_controller.getRawButton(1) == true) {
-      speed = balancePIDSpeed;
-	turn = 0;
-    }
-
-    m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -362,45 +231,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-
-    SmartDashboard.putNumber("DB/String 0", robotGyro.getPitch());
-    SmartDashboard.putNumber("DB/String 1", robotGyro.getYaw());
-    SmartDashboard.putNumber("DB/String 2", robotGyro.getRoll());
   }
 
-}
-
-class MotorAccel {
-  private double accelerationIncrement = 0.5;
-
-  private final double accelerationTime = 0.2; 
-
-  private Timer motorTimer = new Timer();
-
-  public double motorSpeed = 0;
-
-  
-  MotorAccel() {   
-    motorTimer.reset();
-    motorTimer.start();
-  }
-  
-
-  public double accelerateSpeed(double desiredSpeed) {
-    if (motorTimer.get() >= accelerationTime) {
-      accelerationIncrement = (1.5-Math.abs(motorSpeed))*0.6;
-
-      if (Math.abs(desiredSpeed-motorSpeed) <= accelerationIncrement) {
-       motorSpeed = desiredSpeed; 
-      } else {
-        motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
-      }
-      
-      motorTimer.reset();
-
-    } 
-    return motorSpeed;
-
-  }
-  
 }
