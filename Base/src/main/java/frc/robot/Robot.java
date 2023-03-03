@@ -78,9 +78,12 @@ public class Robot extends TimedRobot {
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
+  private final PWMSparkMax armMotor = new PWMSparkMax(0);
+
   DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
+  private final Joystick m_controller2 = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
@@ -349,9 +352,13 @@ public class Robot extends TimedRobot {
     
     if (m_controller.getRawButton(1) == true) {
       speed = balancePIDSpeed;
-	turn = 0;
+	    turn = 0;
     }
-
+    
+    if (!(Math.abs(m_controller2.getY()) < 0.05)) {
+      armMotor.set(m_controller2.getY()/2);
+    }
+  
     m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
