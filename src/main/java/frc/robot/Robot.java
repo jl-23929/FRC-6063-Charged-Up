@@ -15,7 +15,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import edu.wpi.first.wpilibj.interfaces.Gyro;
+import com.revrobotics.CANSparkMax;
+
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.lang.Math;
@@ -44,7 +45,9 @@ public class Robot extends TimedRobot {
 
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
 
-  AHRS robotGyro = new AHRS();
+  private final CANSparkMax turnDrive = new CANSparkMax(24, CANSparkMax.MotorType.kBrushless);
+
+  private final AHRS robotGyro = new AHRS();
 
   private final Joystick m_controller = new Joystick(0);
   private final Timer m_timer = new Timer();
@@ -113,7 +116,9 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    // set throttle
+    SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
+    SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
+    SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
 
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
     // controller speed
@@ -133,6 +138,8 @@ public class Robot extends TimedRobot {
     }
     m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn)) * (0.5 + speedMultiplier * 0.5) * 0.63,
         (speedAccel.accelerateSpeed(speed)) * (speedMultiplier) * 0.6);
+
+    turnDrive.set(m_controller.getX() * speedMultiplier);
   }
 
   /** This function is called once each time the robot enters test mode. */
