@@ -85,9 +85,9 @@ public class Robot extends TimedRobot {
   private final Timer m_timer = new Timer();
   
   private CANSparkMax m_rotation = new CANSparkMax(24, MotorType.kBrushless); //CAN ID may be changed.
-  private CANSparkMax m_arm = new CANSparkMax(25, MotorType.kBrushless);
-  private CANSparkMax m_intake = new CANSparkMax(27, MotorType.kBrushed);
-  private CANSparkMax m_intakeRotation = new CANSparkMax(27, MotorType.kBrushed);
+  private CANSparkMax m_arm = new CANSparkMax(25, MotorType.kBrushless); //CAN ID may be changed.
+  private CANSparkMax m_intake = new CANSparkMax(26, MotorType.kBrushed); //CAN ID may be changed.
+  private CANSparkMax m_intakeRotation = new CANSparkMax(27, MotorType.kBrushed); // CAN ID may be changed.
   private double speed = 0;
   private double turn = 0;
   private double armSpeed  = 0;
