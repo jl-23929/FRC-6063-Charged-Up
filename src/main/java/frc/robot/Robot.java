@@ -78,6 +78,8 @@ public class Robot extends TimedRobot {
 
     // INIT the camera
     CameraServer.startAutomaticCapture();
+
+    turnDrive.setSmartCurrentLimit(10);
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -125,11 +127,11 @@ public class Robot extends TimedRobot {
     m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.63,
         speed * (speedMultiplier) * 0.6);
 
-    turnDrive.set((m_controller.getX() *speedMultiplier) + (m_controller.getX() * armSpeedMultiplier));
+    turnDrive.set(-arm_controller.getZ() * armSpeedMultiplier*0.25);
     
-    liftDrive.set(-arm_controller.getY() * armSpeedMultiplier);
+    liftDrive.set(-arm_controller.getY() * armSpeedMultiplier*0.5);
     armFlip.set((arm_controller.getPOV() == 0 ? 1 : 0) - (arm_controller.getPOV() == 180 ? 1 : 0));
-    armGrab.set(arm_controller.getTrigger() ? 0.2 : -0.2);
+    armGrab.set(arm_controller.getTrigger() ? 1 : -0.2);
   }
 
   /** This function is called once each time the robot enters test mode. */
