@@ -1,0 +1,59 @@
+{
+  "HALProvider": {
+    "Other Devices": {
+      "SPARK MAX [24]": {
+        "name": "Turn"
+      },
+      "SPARK MAX [25]": {
+        "name": "Lift"
+      },
+      "Talon SRX[21]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[22]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[23]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[27]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[28]": {
+        "header": {
+          "open": true
+        }
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo"
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "LiveWindow": {
+        ".status": {
+          "open": true
+        }
+      },
+      "Shuffleboard": {
+        ".metadata": {
+          "open": true
+        }
+      },
+      "SmartDashboard": {
+        "open": true
+      }
+    }
+  }
+}
