@@ -1,0 +1,20 @@
+[
+  {
+    "name": "/Preferences/Should Turn",
+    "type": "boolean",
+    "value": true,
+    "properties": {
+      "persistent": true,
+      "retained": true
+    }
+  },
+  {
+    "name": "/Preferences/Lift Uses PID",
+    "type": "boolean",
+    "value": true,
+    "properties": {
+      "persistent": true,
+      "retained": true
+    }
+  }
+]

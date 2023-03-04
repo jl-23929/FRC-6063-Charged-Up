@@ -10,12 +10,14 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
@@ -109,6 +111,9 @@ public class Robot extends TimedRobot {
 
     rotateTarget = turnEncoder.getPosition();
     liftTarget = liftEncoder.getPosition();
+
+    SmartDashboard.putBoolean("Lift uses PID", true);
+    SmartDashboard.putBoolean("Should Turn", true);
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -121,13 +126,13 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
-    SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
-    SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
-    SmartDashboard.putString("Rotate", String.valueOf(turnEncoder.getPosition()));
-    SmartDashboard.putString("Rotate (Target)", String.valueOf(rotateTarget));
-    SmartDashboard.putString("Lift", String.valueOf(liftEncoder.getPosition()));
-    SmartDashboard.putString("Lift (Target)", String.valueOf(liftTarget));
+    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
+    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
+    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
+    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
+    SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
+    SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
+    SmartDashboard.putNumber("Lift (Target)", liftTarget);
   }
 
   /**
@@ -138,16 +143,27 @@ public class Robot extends TimedRobot {
 
   }
 
+  @Override
+  public void simulationInit() {
+    REVPhysicsSim.getInstance().addSparkMax(turnDrive, DCMotor.getNEO(1));
+    REVPhysicsSim.getInstance().addSparkMax(liftDrive, DCMotor.getNEO(1));
+  }
+
+  @Override
+  public void simulationPeriodic() {
+    REVPhysicsSim.getInstance().run();
+  }
+
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
-    SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
-    SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
-    SmartDashboard.putString("Rotate", String.valueOf(turnEncoder.getPosition()));
-    SmartDashboard.putString("Rotate (Target)", String.valueOf(rotateTarget));
-    SmartDashboard.putString("Lift", String.valueOf(liftEncoder.getPosition()));
-    SmartDashboard.putString("Lift (Target)", String.valueOf(liftTarget));
+    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
+    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
+    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
+    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
+    SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
+    SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
+    SmartDashboard.putNumber("Lift (Target)", liftTarget);
 
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
     // controller speed
@@ -206,9 +222,9 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-    SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
-    SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
-    SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
+    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
+    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
+    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
   }
 
 }
