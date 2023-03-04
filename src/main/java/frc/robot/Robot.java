@@ -19,6 +19,8 @@ import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.lang.Math;
+import java.util.Arrays;
+
 import com.kauailabs.navx.frc.AHRS;
 
 /**
@@ -32,13 +34,13 @@ import com.kauailabs.navx.frc.AHRS;
  */
 
 public class Robot extends TimedRobot {
-  private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20);
+  private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
 
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
-  private final WPI_TalonSRX m_rightFrontDrive = new WPI_TalonSRX(23);
   private final WPI_TalonSRX m_rightBackDrive = new WPI_TalonSRX(22);
+  private final WPI_TalonSRX m_rightFrontDrive = new WPI_TalonSRX(23);
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
@@ -56,6 +58,9 @@ public class Robot extends TimedRobot {
   private final WPI_TalonSRX armFlip = new WPI_TalonSRX(28);
 
   private final AHRS robotGyro = new AHRS();
+  // 0: Pitch 1: Roll 2: Yaw
+  private double[] initialGyro = { 0, 0, 0 };
+  private double[] gyro = { 0, 0, 0 };
 
   private final Joystick m_controller = new Joystick(0);
   private final Joystick arm_controller = new Joystick(1);
@@ -65,6 +70,10 @@ public class Robot extends TimedRobot {
   private double turn = 0;
   private double rotateTarget = 0;
   private double liftTarget = 0;
+
+  private PIDControl balanceControl = new PIDControl(0.2, 0, 0, "Balance PID");
+
+  private Vision vision = new Vision();
 
   private double speedMultiplier = 1;
   private double armSpeedMultiplier = 1;
@@ -78,6 +87,8 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     // INIT the camera
     CameraServer.startAutomaticCapture();
+    robotGyro.calibrate();
+    initialGyro = new double[] { robotGyro.getPitch(), robotGyro.getRoll(), robotGyro.getYaw() };
 
     turnDrive.setSmartCurrentLimit(20);
 
@@ -90,17 +101,39 @@ public class Robot extends TimedRobot {
     turnDrive.setSoftLimit(SoftLimitDirection.kForward, 16);
     turnDrive.setSoftLimit(SoftLimitDirection.kReverse, 16);
 
+    rotateTarget = turnEncoder.getPosition();
+    SmartDashboard.putBoolean("Should Turn", true);
+
     liftPID.setP(5e-5);
     liftPID.setI(1e-6);
     liftPID.setD(0);
     liftPID.setFF(0.000156);
     liftPID.setOutputRange(-1, 1);
 
-    rotateTarget = turnEncoder.getPosition();
     liftTarget = liftEncoder.getPosition();
-
     SmartDashboard.putBoolean("Lift uses PID", true);
-    SmartDashboard.putBoolean("Should Turn", true);
+
+    balanceControl.enableContinuousInput(-180, 180);
+  }
+
+  public void outputDebugging() {
+    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
+    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
+    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
+
+    SmartDashboard.putNumber("Calibrated Pitch", gyro[0]);
+    SmartDashboard.putNumber("Calibrated Roll", gyro[1]);
+    SmartDashboard.putNumber("Calibrated Yaw", gyro[2]);
+
+    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
+    SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
+    SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
+    SmartDashboard.putNumber("Lift (Target)", liftTarget);
+    SmartDashboard.putNumber("Turn PID Out", turnDrive.getAppliedOutput());
+    SmartDashboard.putNumber("Lift PID Out", turnDrive.getAppliedOutput());
+    SmartDashboard.putNumber("Balance PID Out", balanceControl.value);
+
+    SmartDashboard.putNumberArray("April Tags", vision.results.stream().mapToDouble(i -> (double) i).toArray());
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -113,13 +146,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
-    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
-    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
-    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
-    SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
-    SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
-    SmartDashboard.putNumber("Lift (Target)", liftTarget);
+    outputDebugging();
   }
 
   /**
@@ -144,13 +171,10 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
-    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
-    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
-    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
-    SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
-    SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
-    SmartDashboard.putNumber("Lift (Target)", liftTarget);
+    outputDebugging();
+    balanceControl.update(gyro[0], 0);
+    gyro = new double[] { robotGyro.getRoll() - initialGyro[0], robotGyro.getPitch() - initialGyro[1],
+        robotGyro.getRoll() - initialGyro[2] };
 
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
     // controller speed
@@ -163,10 +187,13 @@ public class Robot extends TimedRobot {
       speed = 0;
       turn = 0;
     }
+
+    if (m_controller.getTrigger()) {
+      speed += balanceControl.value;
+    }
+
     m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.63,
         speed * (speedMultiplier) * 0.6);
-
-
 
     // Arm Code
     armSpeedMultiplier = 0.5 + ((1 - arm_controller.getThrottle()) / 2);
@@ -180,18 +207,16 @@ public class Robot extends TimedRobot {
     } else {
       turnDrive.set(0);
     }
-    SmartDashboard.putNumber("Turn PID Out", turnDrive.getAppliedOutput());
 
     possible_target = liftTarget - (arm_controller.getY() * armSpeedMultiplier * 0.05);
     // if (possible_target > -16 && possible_target < 16) {
-      liftTarget = possible_target;
+    liftTarget = possible_target;
     // }
     if (SmartDashboard.getBoolean("Lift uses PID", true)) {
       liftPID.setReference(liftTarget, ControlType.kPosition);
     } else {
       liftDrive.set(-arm_controller.getY() * armSpeedMultiplier - 0.02);
     }
-    SmartDashboard.putNumber("Lift PID Out", turnDrive.getAppliedOutput());
 
     armFlip.set((arm_controller.getPOV() == 0 ? 1 : 0) - (arm_controller.getPOV() == 180 ? 1 : 0));
     if (arm_controller.getPOV() == 180) {
@@ -209,9 +234,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-    SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
-    SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
-    SmartDashboard.putNumber("Roll", robotGyro.getRoll());
+    outputDebugging();
   }
-
 }
