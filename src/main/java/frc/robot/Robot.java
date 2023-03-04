@@ -46,26 +46,22 @@ public class Robot extends TimedRobot {
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final CANSparkMax turnDrive = new CANSparkMax(24, CANSparkMax.MotorType.kBrushless);
+  private final CANSparkMax liftDrive = new CANSparkMax(25, CANSparkMax.MotorType.kBrushless);
+
+  private final WPI_TalonSRX armGrab = new WPI_TalonSRX(27);
+  private final WPI_TalonSRX armFlip = new WPI_TalonSRX(28);
 
   private final AHRS robotGyro = new AHRS();
 
   private final Joystick m_controller = new Joystick(0);
+  private final Joystick arm_controller = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
   private double turn = 0;
 
   private double speedMultiplier = 1;
-
-  /**
-   * private MotorAccel leftFrontMotor = new MotorAccel(m_leftFrontDrive);
-   * private MotorAccel leftBackMotor = new MotorAccel(m_leftBackDrive);
-   * private MotorAccel rightFrontMotor = new MotorAccel(m_rightFrontDrive);
-   * private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);
-   */
-
-  private MotorAccel speedAccel = new MotorAccel();
-  private MotorAccel turnAccel = new MotorAccel();
+  private double armSpeedMultiplier = 1;
 
   /**
    * This function is run when the robot is first started up and should be used
@@ -97,12 +93,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
     SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
     SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
-    // Drive for 2 seconds
-    if (m_timer.get() < 2.0) {
-      // Drive forwards half speed, make sure to turn input squaring off
-
-    } else {
-    }
   }
 
   /**
@@ -121,25 +111,25 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
 
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
+    speedMultiplier = 0.5 + ((1 - arm_controller.getThrottle())) / 2;
     // controller speed
 
     if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
 
       speed = m_controller.getY(); // note - using xbox controller
       turn = m_controller.getZ(); // note - using xbox controller
-
-      // old code
-
-      // m_robotDrive.arcadeDrive(-m_controller.getLeftY(),
-      // -m_controller.getRightX());
     } else {
       speed = 0;
       turn = 0;
     }
-    m_drive.arcadeDrive((turnAccel.accelerateSpeed(turn)) * (0.5 + speedMultiplier * 0.5) * 0.63,
-        (speedAccel.accelerateSpeed(speed)) * (speedMultiplier) * 0.6);
+    m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.63,
+        speed * (speedMultiplier) * 0.6);
 
-    turnDrive.set(m_controller.getX() * speedMultiplier);
+    turnDrive.set((m_controller.getX() *speedMultiplier) + (m_controller.getX() * armSpeedMultiplier));
+    
+    liftDrive.set(-arm_controller.getY() * armSpeedMultiplier);
+    armFlip.set((arm_controller.getPOV() == 0 ? 1 : 0) - (arm_controller.getPOV() == 180 ? 1 : 0));
+    armGrab.set(arm_controller.getTrigger() ? 0.2 : -0.2);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -153,39 +143,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("Pitch", String.valueOf(robotGyro.getPitch()));
     SmartDashboard.putString("Yaw", String.valueOf(robotGyro.getYaw()));
     SmartDashboard.putString("Roll", String.valueOf(robotGyro.getRoll()));
-  }
-
-}
-
-class MotorAccel {
-  private double accelerationIncrement = 0.5;
-
-  private final double accelerationTime = 0.2;
-
-  private Timer motorTimer = new Timer();
-
-  public double motorSpeed = 0;
-
-  MotorAccel() {
-    motorTimer.reset();
-    motorTimer.start();
-  }
-
-  public double accelerateSpeed(double desiredSpeed) {
-    if (motorTimer.get() >= accelerationTime) {
-      accelerationIncrement = (1.5 - Math.abs(motorSpeed)) * 0.6;
-
-      if (Math.abs(desiredSpeed - motorSpeed) <= accelerationIncrement) {
-        motorSpeed = desiredSpeed;
-      } else {
-        motorSpeed = motorSpeed + accelerationIncrement * Math.signum(desiredSpeed - motorSpeed);
-      }
-
-      motorTimer.reset();
-
-    }
-    return motorSpeed;
-
   }
 
 }
