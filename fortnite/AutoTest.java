@@ -33,11 +33,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
 import edu.wpi.first.math.MathUtil;
@@ -121,10 +119,6 @@ public class AutoTest extends TimedRobot {
   private double rotatePIDSpeed = 0;
 
   private double rotateGoal = 0;
-
-
-
-  private Array aprilTagDetections[];
 
   Thread m_visionThread;
 
@@ -245,8 +239,6 @@ public class AutoTest extends TimedRobot {
 
             for (var id : set){
               System.out.println("Tag: " + String.valueOf(id));
-
-              aprilTagDetections[1] = String.valueOf(id);
             }
 
             if (timer.advanceIfElapsed(1.0)){

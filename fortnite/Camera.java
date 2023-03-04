@@ -33,11 +33,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
 import edu.wpi.first.math.MathUtil;
@@ -78,12 +76,9 @@ public class Robot extends TimedRobot {
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
-  private final PWMSparkMax armMotor = new PWMSparkMax(0);
-
   DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
-  private final Joystick m_controller2 = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
@@ -125,10 +120,6 @@ public class Robot extends TimedRobot {
 
   private double rotateGoal = 0;
 
-
-
-  private Array aprilTagDetections[];
-
   Thread m_visionThread;
 
 
@@ -145,8 +136,6 @@ public class Robot extends TimedRobot {
   private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
 */
 
-  private MotorAccel speedAccel = new MotorAccel();
-  private MotorAccel turnAccel = new MotorAccel();
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -158,9 +147,6 @@ public class Robot extends TimedRobot {
 
     robotGyro.calibrate();
 
-    initPitch = robotGyro.getPitch();
-    initRoll = robotGyro.getRoll();
-    initYaw = robotGyro.getYaw();    
 
     m_visionThread =
     new Thread(
@@ -248,8 +234,6 @@ public class Robot extends TimedRobot {
 
             for (var id : set){
               System.out.println("Tag: " + String.valueOf(id));
-
-              aprilTagDetections[1] = String.valueOf(id);
             }
 
             if (timer.advanceIfElapsed(1.0)){
@@ -263,11 +247,7 @@ public class Robot extends TimedRobot {
         });
     m_visionThread.setDaemon(true);
     m_visionThread.start();
-
-    balancePID.enableContinuousInput(-180, 180);
-
     
-
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
@@ -276,44 +256,16 @@ public class Robot extends TimedRobot {
   }
 
   public void robotPeriodic() {
-    zerodPitch = robotGyro.getPitch()-initPitch;
-    zerodRoll = robotGyro.getRoll()-initRoll;
-    zerodYaw = robotGyro.getYaw()-initYaw;
-
-    balancePIDSpeed = balancePID.calculate(zerodPitch, 0);
-    rotatePIDSpeed = rotatePID.calculate(zerodYaw, rotateGoal);
-	
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
   @Override
   public void autonomousInit() {
-    m_timer.reset();
-    m_timer.start();
-
-    SmartDashboard.putString("DB/String 4", String.valueOf(robotGyro.getPitch()));
-    
-    
-
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // Drive for 2 seconds
-    SmartDashboard.putString("DB/String 0",String.valueOf(robotGyro.getPitch()));
-    SmartDashboard.putString("DB/String 1", String.valueOf(robotGyro.getYaw()));
-    SmartDashboard.putString("DB/String 2", String.valueOf(robotGyro.getRoll()));
-
-
-
-    SmartDashboard.putString("DB/String 5", String.valueOf(robotGyro.getPitch()-initPitch));
-    SmartDashboard.putString("DB/String 6", String.valueOf(robotGyro.getRoll()-initRoll));
-    SmartDashboard.putString("DB/String 7", String.valueOf(robotGyro.getYaw()-initYaw));
-
-    rotateGoal = 0;
-
-    m_robotDrive.arcadeDrive(rotatePIDSpeed, balancePIDSpeed);
 
   }
 
@@ -326,40 +278,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    // set throttle
 
-    speedMultiplier = 0.75 + ((1-m_controller.getThrottle()))/3.67;
-    // controller speed
-
-    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
-      
-      speed = m_controller.getY();  // note - using xbox controller 
-      turn = m_controller.getZ(); // note - using xbox controller
-
-      // old code
-      // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
-    } else {
-      speed = 0;
-      turn = 0;
-    } 
-
-    if (m_controller.getRawButton(2) == true) {
-      if ((zerodYaw < 0.1) && (zerodYaw > -0.1)) {
-        speed = 0;
-        turn = rotatePIDSpeed;
-      }
-    } 
-    
-    if (m_controller.getRawButton(1) == true) {
-      speed = balancePIDSpeed;
-	    turn = 0;
-    }
-    
-    if (!(Math.abs(m_controller2.getY()) < 0.05)) {
-      armMotor.set(m_controller2.getY()/2);
-    }
-  
-    m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -369,45 +288,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-
-    SmartDashboard.putNumber("DB/String 0", robotGyro.getPitch());
-    SmartDashboard.putNumber("DB/String 1", robotGyro.getYaw());
-    SmartDashboard.putNumber("DB/String 2", robotGyro.getRoll());
   }
 
-}
-
-class MotorAccel {
-  private double accelerationIncrement = 0.5;
-
-  private final double accelerationTime = 0.2; 
-
-  private Timer motorTimer = new Timer();
-
-  public double motorSpeed = 0;
-
-  
-  MotorAccel() {   
-    motorTimer.reset();
-    motorTimer.start();
-  }
-  
-
-  public double accelerateSpeed(double desiredSpeed) {
-    if (motorTimer.get() >= accelerationTime) {
-      accelerationIncrement = (1.5-Math.abs(motorSpeed))*0.6;
-
-      if (Math.abs(desiredSpeed-motorSpeed) <= accelerationIncrement) {
-       motorSpeed = desiredSpeed; 
-      } else {
-        motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
-      }
-      
-      motorTimer.reset();
-
-    } 
-    return motorSpeed;
-
-  }
-  
 }

@@ -33,11 +33,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
 import edu.wpi.first.math.MathUtil;
@@ -67,7 +65,7 @@ import java.lang.reflect.Array;
  * directory.
  */
 
-public class Robot extends TimedRobot {
+public class AutoCamera extends TimedRobot {
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
 
@@ -78,9 +76,16 @@ public class Robot extends TimedRobot {
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
+  private final PWMSparkMax armMotor = new PWMSparkMax(0);
+
+  private final PWMSparkMax clawMotor = new PWMSparkMax(1);
+
+  private final PWMSparkMax clawMotorClose = new PWMSparkMax(2);
+
   DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
+  private final Joystick m_controller2 = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
@@ -122,9 +127,7 @@ public class Robot extends TimedRobot {
 
   private double rotateGoal = 0;
 
-
-
-  private Array aprilTagDetections[];
+  private static boolean park = true;
 
   Thread m_visionThread;
 
@@ -142,6 +145,8 @@ public class Robot extends TimedRobot {
   private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
 */
 
+  private MotorAccel speedAccel = new MotorAccel();
+  private MotorAccel turnAccel = new MotorAccel();
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -243,8 +248,6 @@ public class Robot extends TimedRobot {
 
             for (var id : set){
               System.out.println("Tag: " + String.valueOf(id));
-
-              aprilTagDetections[1] = String.valueOf(id);
             }
 
             if (timer.advanceIfElapsed(1.0)){
@@ -306,6 +309,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putString("DB/String 6", String.valueOf(robotGyro.getRoll()-initRoll));
     SmartDashboard.putString("DB/String 7", String.valueOf(robotGyro.getYaw()-initYaw));
 
+    
+
     rotateGoal = 0;
 
     m_robotDrive.arcadeDrive(rotatePIDSpeed, balancePIDSpeed);
@@ -347,9 +352,20 @@ public class Robot extends TimedRobot {
     
     if (m_controller.getRawButton(1) == true) {
       speed = balancePIDSpeed;
-	turn = 0;
+	    turn = 0;
     }
-
+    
+    // 2nd controller code
+    if (!(Math.abs(m_controller2.getY()) < 0.05)) {
+      armMotor.set(m_controller2.getY()/2);
+    }
+    if (!(Math.abs(m_controller2.getX()) < 0.05)) {
+      clawMotor.set(m_controller2.getX()/2);
+    }
+    if (!(Math.abs(m_controller2.getZ()) < 0.05)) {
+      clawMotor.set(m_controller2.getZ()/2);
+    }
+  
     m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 

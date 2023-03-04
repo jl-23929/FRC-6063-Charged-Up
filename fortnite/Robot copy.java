@@ -33,11 +33,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.CAN;
 import edu.wpi.first.wpilibj.Encoder;
 
 import edu.wpi.first.math.MathUtil;
@@ -67,7 +65,7 @@ import java.lang.reflect.Array;
  * directory.
  */
 
-public class AutoBalance extends TimedRobot {
+public class Robot extends TimedRobot {
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20); 
 
@@ -78,9 +76,16 @@ public class AutoBalance extends TimedRobot {
 
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
+  private final PWMSparkMax armMotor = new PWMSparkMax(0);
+
+  private final PWMSparkMax clawMotor = new PWMSparkMax(1);
+
+  private final PWMSparkMax clawMotorClose = new PWMSparkMax(2);
+
   DifferentialDrive m_robotDrive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final Joystick m_controller = new Joystick(0);
+  private final Joystick m_controller2 = new Joystick(1);
   private final Timer m_timer = new Timer();
 
   private double speed = 0;
@@ -122,10 +127,6 @@ public class AutoBalance extends TimedRobot {
 
   private double rotateGoal = 0;
 
-
-
-  private Array aprilTagDetections[];
-
   Thread m_visionThread;
 
 
@@ -142,6 +143,8 @@ public class AutoBalance extends TimedRobot {
   private MotorAccel rightBackMotor = new MotorAccel(m_rightBackDrive);  
 */
 
+  private MotorAccel speedAccel = new MotorAccel();
+  private MotorAccel turnAccel = new MotorAccel();
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -150,22 +153,6 @@ public class AutoBalance extends TimedRobot {
 
 
   public void robotInit() {
-
-    robotGyro.calibrate();
-
-    initPitch = robotGyro.getPitch();
-    initRoll = robotGyro.getRoll();
-    initYaw = robotGyro.getYaw();    
-
-    balancePID.enableContinuousInput(-180, 180);
-
-    
-
-    // We need to invert one side of the drivetrain so that positive voltages
-    // result in both sides moving forward. Depending on how your robot's
-    // gearbox is constructed, you might have to invert the left side instead.
-   // m_rightFrontDrive.setInverted(true);
-   // m_rightBackDrive.setInverted(true);
   }
 
   public void robotPeriodic() {
@@ -193,21 +180,6 @@ public class AutoBalance extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // Drive for 2 seconds
-    SmartDashboard.putString("DB/String 0",String.valueOf(robotGyro.getPitch()));
-    SmartDashboard.putString("DB/String 1", String.valueOf(robotGyro.getYaw()));
-    SmartDashboard.putString("DB/String 2", String.valueOf(robotGyro.getRoll()));
-
-
-
-    SmartDashboard.putString("DB/String 5", String.valueOf(robotGyro.getPitch()-initPitch));
-    SmartDashboard.putString("DB/String 6", String.valueOf(robotGyro.getRoll()-initRoll));
-    SmartDashboard.putString("DB/String 7", String.valueOf(robotGyro.getYaw()-initYaw));
-
-    rotateGoal = 0;
-
-    m_robotDrive.arcadeDrive(rotatePIDSpeed, balancePIDSpeed);
-
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
@@ -219,7 +191,47 @@ public class AutoBalance extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
+    // set throttle
 
+    speedMultiplier = 0.75 + ((1-m_controller.getThrottle()))/3.67;
+    // controller speed
+
+    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
+      
+      speed = m_controller.getY();  // note - using xbox controller 
+      turn = m_controller.getZ(); // note - using xbox controller
+
+      // old code
+      // m_robotDrive.arcadeDrive(-m_controller.getLeftY(), -m_controller.getRightX());
+    } else {
+      speed = 0;
+      turn = 0;
+    } 
+
+    if (m_controller.getRawButton(2) == true) {
+      if ((zerodYaw < 0.1) && (zerodYaw > -0.1)) {
+        speed = 0;
+        turn = rotatePIDSpeed;
+      }
+    } 
+    
+    if (m_controller.getRawButton(1) == true) {
+      speed = balancePIDSpeed;
+	    turn = 0;
+    }
+    
+    // 2nd controller code
+    if (!(Math.abs(m_controller2.getY()) < 0.05)) {
+      armMotor.set(m_controller2.getY()/2);
+    }
+    if (!(Math.abs(m_controller2.getX()) < 0.05)) {
+      clawMotor.set(m_controller2.getX()/2);
+    }
+    if (!(Math.abs(m_controller2.getZ()) < 0.05)) {
+      clawMotor.set(m_controller2.getZ()/2);
+    }
+  
+    m_robotDrive.arcadeDrive((turnAccel.accelerateSpeed(turn))*(0.5+speedMultiplier*0.5)*0.63,(speedAccel.accelerateSpeed(speed))*(speedMultiplier)*0.6);
   }
 
   /** This function is called once each time the robot enters test mode. */
@@ -229,6 +241,42 @@ public class AutoBalance extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
+
   }
 
+}
+
+class MotorAccel {
+  private double accelerationIncrement = 0.5;
+
+  private final double accelerationTime = 0.2; 
+
+  private Timer motorTimer = new Timer();
+
+  public double motorSpeed = 0;
+
+  
+  MotorAccel() {   
+    motorTimer.reset();
+    motorTimer.start();
+  }
+  
+
+  public double accelerateSpeed(double desiredSpeed) {
+    if (motorTimer.get() >= accelerationTime) {
+      accelerationIncrement = (1.5-Math.abs(motorSpeed))*0.6;
+
+      if (Math.abs(desiredSpeed-motorSpeed) <= accelerationIncrement) {
+       motorSpeed = desiredSpeed; 
+      } else {
+        motorSpeed = motorSpeed + accelerationIncrement*Math.signum(desiredSpeed-motorSpeed);
+      }
+      
+      motorTimer.reset();
+
+    } 
+    return motorSpeed;
+
+  }
+  
 }
