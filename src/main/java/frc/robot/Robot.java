@@ -19,7 +19,6 @@ import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.lang.Math;
-import java.util.Arrays;
 
 import com.kauailabs.navx.frc.AHRS;
 
@@ -36,12 +35,10 @@ import com.kauailabs.navx.frc.AHRS;
 public class Robot extends TimedRobot {
   private final WPI_TalonSRX m_leftBackDrive = new WPI_TalonSRX(20);
   private final WPI_TalonSRX m_leftFrontDrive = new WPI_TalonSRX(21);
-
   MotorControllerGroup leftGroup = new MotorControllerGroup(m_leftFrontDrive, m_leftBackDrive);
 
   private final WPI_TalonSRX m_rightBackDrive = new WPI_TalonSRX(22);
   private final WPI_TalonSRX m_rightFrontDrive = new WPI_TalonSRX(23);
-
   MotorControllerGroup rightGroup = new MotorControllerGroup(m_rightFrontDrive, m_rightBackDrive);
 
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
@@ -66,8 +63,9 @@ public class Robot extends TimedRobot {
   private final Joystick arm_controller = new Joystick(1);
   private final Timer m_timer = new Timer();
 
-  private double speed = 0;
-  private double turn = 0;
+  private Acceleration forwardAccel = new Acceleration("Forward Acceleration", 0.5, 0.2);
+  private Acceleration turnAccel = new Acceleration("Turning Acceleration", 0.5, 0.2);
+
   private double rotateTarget = 0;
   private double liftTarget = 0;
 
@@ -116,7 +114,8 @@ public class Robot extends TimedRobot {
     balanceControl.enableContinuousInput(-180, 180);
   }
 
-  public void outputDebugging() {
+  @Override
+  public void robotPeriodic() {
     SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
     SmartDashboard.putNumber("Roll", robotGyro.getRoll());
     SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
@@ -146,7 +145,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    outputDebugging();
   }
 
   /**
@@ -171,15 +169,16 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    outputDebugging();
+    // Set Gyro
     balanceControl.update(gyro[0], 0);
     gyro = new double[] { robotGyro.getRoll() - initialGyro[0], robotGyro.getPitch() - initialGyro[1],
         robotGyro.getRoll() - initialGyro[2] };
 
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
-    // controller speed
+    SmartDashboard.putNumber("Speed Multiplier", speedMultiplier);
 
     // Base Code
+    double speed, turn;
     if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
       speed = m_controller.getY();
       turn = m_controller.getZ();
@@ -192,11 +191,12 @@ public class Robot extends TimedRobot {
       speed += balanceControl.value;
     }
 
-    m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.63,
-        speed * (speedMultiplier) * 0.6);
+    m_drive.arcadeDrive(turnAccel.set(turn) * (0.5 + speedMultiplier * 0.5) * 0.63,
+        forwardAccel.set(speed) * speedMultiplier * 0.6);
 
     // Arm Code
     armSpeedMultiplier = 0.5 + ((1 - arm_controller.getThrottle()) / 2);
+    SmartDashboard.putNumber("Arm Speed Multiplier", armSpeedMultiplier);
 
     var possible_target = rotateTarget - (arm_controller.getZ() * armSpeedMultiplier * 0.05);
     if (possible_target > -16 && possible_target < 16) {
@@ -209,9 +209,9 @@ public class Robot extends TimedRobot {
     }
 
     possible_target = liftTarget - (arm_controller.getY() * armSpeedMultiplier * 0.05);
-    // if (possible_target > -16 && possible_target < 16) {
-    liftTarget = possible_target;
-    // }
+    if (possible_target > 0 && possible_target < 90) { // TODO: Assign the top value based on testing
+      liftTarget = possible_target;
+    }
     if (SmartDashboard.getBoolean("Lift uses PID", true)) {
       liftPID.setReference(liftTarget, ControlType.kPosition);
     } else {
@@ -234,6 +234,5 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-    outputDebugging();
   }
 }

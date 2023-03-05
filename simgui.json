@@ -32,6 +32,20 @@
           "open": true
         }
       }
+    },
+    "RoboRIO": {
+      "3.3V Rail": {
+        "open": true
+      },
+      "5V Rail": {
+        "open": true
+      },
+      "6V Rail": {
+        "open": true
+      },
+      "RoboRIO Input": {
+        "open": true
+      }
     }
   },
   "NTProvider": {
@@ -40,14 +54,14 @@
     }
   },
   "NetworkTables": {
+    "persistent": {
+      "Preferences": {
+        "open": true
+      }
+    },
     "transitory": {
       "LiveWindow": {
         ".status": {
-          "open": true
-        }
-      },
-      "Shuffleboard": {
-        ".metadata": {
           "open": true
         }
       },
