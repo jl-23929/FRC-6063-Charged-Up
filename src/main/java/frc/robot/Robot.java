@@ -116,12 +116,18 @@ public class Robot extends TimedRobot {
     liftTarget = liftEncoder.getPosition();
 
     balanceControl.enableContinuousInput(-180, 180);
+
+    SmartDashboard.putNumber("With Tag Speed", 0.12);
+    SmartDashboard.putNumber("Without Tag Speed", 0.1);
   }
 
   @Override
   public void robotPeriodic() {
-    // Output Robot info
+    // Set Gyro
+    gyro = new double[] { robotGyro.getRoll() - initialGyro[0], robotGyro.getPitch() - initialGyro[1],
+        robotGyro.getRoll() - initialGyro[2] };
 
+    // Output Robot info
     SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
     SmartDashboard.putNumber("Roll", robotGyro.getRoll());
     SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
@@ -140,16 +146,35 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumberArray("April Tags", vision.results.stream().mapToDouble(i -> (double) i).toArray());
   }
 
+  private boolean started_with_tags;
   /** This function is run once each time the robot enters autonomous mode. */
   @Override
   public void autonomousInit() {
     m_timer.reset();
     m_timer.start();
+
+    started_with_tags = vision.results.contains(2) || vision.results.contains(7);
+  }
+
+  public double calcBalance() {
+    Double out = Math.min(Math.max(balanceControl.calculate(gyro[0], 0), -3), 3);
+  
+    SmartDashboard.putNumber("Balance PID Out", out);
+    return out;
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
+    if (started_with_tags && m_timer.get() < 3.5) {
+      m_drive.arcadeDrive(SmartDashboard.getNumber("With Tag Speed", 0.12),0);
+    } else if (m_timer.get() < 3) {
+      m_drive.arcadeDrive(SmartDashboard.getNumber("Without Tag Speed", 0.1),0);
+    } else {
+      m_drive.arcadeDrive(calcBalance(), 0);
+    }
+    SmartDashboard.putNumber("Auto Time", m_timer.get());
+    SmartDashboard.putNumber("Auto Speed", leftGroup.get());
   }
 
   /**
@@ -174,10 +199,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    // Set Gyro
-    gyro = new double[] { robotGyro.getRoll() - initialGyro[0], robotGyro.getPitch() - initialGyro[1],
-        robotGyro.getRoll() - initialGyro[2] };
-
     speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) * 0.125;
     SmartDashboard.putNumber("Speed Multiplier", speedMultiplier);
 
@@ -192,10 +213,7 @@ public class Robot extends TimedRobot {
     }
 
     if (m_controller.getTrigger()) {
-      double out = balanceControl.calculate(gyro[0], 0);
-      speed += out;
-
-      SmartDashboard.putNumber("Balance PID Out", out);
+      speed += calcBalance();
     }
 
     m_drive.arcadeDrive(turnAccel.set(turn) * (0.5 + speedMultiplier * 0.5) * 0.63,

@@ -235,6 +235,58 @@
               "Colors/Color when true": "#7CFC00FF",
               "Colors/Color when false": "#8B0000FF"
             }
+          },
+          "0,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/With Tag Speed",
+              "_title": "SmartDashboard/With Tag Speed",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "1,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Without Tag Speed",
+              "_title": "SmartDashboard/Without Tag Speed",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "0,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Auto Time",
+              "_title": "Auto Time",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "1,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Auto Speed",
+              "_title": "Auto Speed",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
           }
         }
       }
@@ -364,8 +416,7 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 20.0,
               "Y-axis/Lower bound": 0.0,
-              "Y-axis/Unit": "ul",
-              "Visible data/SmartDashboard/April Tags[0]": true
+              "Y-axis/Unit": "ul"
             }
           },
           "4,3": {
@@ -591,6 +642,66 @@
               "_type": "Text View",
               "_source0": "network_table:///SmartDashboard/Arm Speed Multiplier",
               "_title": "Arm Speed Multiplier",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "9,5": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Number Slider",
+              "_source0": "network_table:///SmartDashboard/With Tag Speed",
+              "_title": "With Tag Speed",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Slider Settings/Min": -1.0,
+              "Slider Settings/Max": 1.0,
+              "Slider Settings/Block increment": 0.0625,
+              "Visuals/Display value": true
+            }
+          },
+          "11,5": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Number Slider",
+              "_source0": "network_table:///SmartDashboard/Without Tag Speed",
+              "_title": "Without Tag Speed",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Slider Settings/Min": -1.0,
+              "Slider Settings/Max": 1.0,
+              "Slider Settings/Block increment": 0.0625,
+              "Visuals/Display value": true
+            }
+          },
+          "8,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Auto Time",
+              "_title": "Auto Time",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "9,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Auto Speed",
+              "_title": "Auto Speed",
               "_glyph": 148,
               "_showGlyph": false
             }
@@ -878,9 +989,9 @@
     }
   ],
   "windowGeometry": {
-    "x": 0.0,
-    "y": 0.0,
-    "width": 1920.0,
-    "height": 1032.0
+    "x": -8.0,
+    "y": -8.0,
+    "width": 1936.0,
+    "height": 1048.0
   }
 }
