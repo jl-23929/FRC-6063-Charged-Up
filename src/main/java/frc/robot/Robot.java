@@ -3,7 +3,9 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -12,8 +14,6 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
-import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.SoftLimitDirection;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -44,11 +44,11 @@ public class Robot extends TimedRobot {
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
 
   private final CANSparkMax turnDrive = new CANSparkMax(24, CANSparkMax.MotorType.kBrushless);
-  private final SparkMaxPIDController turnPID = turnDrive.getPIDController();
+  private final MaxPID turnPID = new MaxPID(turnDrive.getPIDController());
   private final RelativeEncoder turnEncoder = turnDrive.getEncoder();
 
   private final CANSparkMax liftDrive = new CANSparkMax(25, CANSparkMax.MotorType.kBrushless);
-  private final SparkMaxPIDController liftPID = turnDrive.getPIDController();
+  private final MaxPID liftPID = new MaxPID(liftDrive.getPIDController());
   private final RelativeEncoder liftEncoder = turnDrive.getEncoder();
 
   private final WPI_TalonSRX armGrab = new WPI_TalonSRX(27);
@@ -67,9 +67,11 @@ public class Robot extends TimedRobot {
   private Acceleration turnAccel = new Acceleration("Turning Acceleration", 0.5, 0.2);
 
   private double rotateTarget = 0;
+  private Preference shouldRotate = new Preference("Should Turn", true);
   private double liftTarget = 0;
+  private Preference liftUsesPID = new Preference("Lift Uses PID", true);
 
-  private PIDControl balanceControl = new PIDControl(0.2, 0, 0, "Balance PID");
+  private PIDController balanceControl = new PIDController(0.2, 0, 0);
 
   private Vision vision = new Vision();
 
@@ -83,6 +85,10 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    // Add PID loops to ShuffleBoard
+    SendableRegistry.addLW(liftPID, "PIDController");
+    SendableRegistry.addLW(liftPID, "PIDController");
+
     // INIT the camera
     CameraServer.startAutomaticCapture();
     robotGyro.calibrate();
@@ -91,31 +97,31 @@ public class Robot extends TimedRobot {
     turnDrive.setSmartCurrentLimit(20);
 
     // Set rotate PID
-    turnPID.setP(5e-5);
-    turnPID.setI(1e-6);
-    turnPID.setD(0);
-    turnPID.setFF(0.000156);
-    turnPID.setOutputRange(-0.4, 0.4);
+    turnPID.controller.setP(5e-5);
+    turnPID.controller.setI(1e-6);
+    turnPID.controller.setD(0);
+    turnPID.controller.setFF(0.000156);
+    turnPID.controller.setOutputRange(-0.4, 0.4);
     turnDrive.setSoftLimit(SoftLimitDirection.kForward, 16);
     turnDrive.setSoftLimit(SoftLimitDirection.kReverse, 16);
 
     rotateTarget = turnEncoder.getPosition();
-    SmartDashboard.putBoolean("Should Turn", true);
 
-    liftPID.setP(5e-5);
-    liftPID.setI(1e-6);
-    liftPID.setD(0);
-    liftPID.setFF(0.000156);
-    liftPID.setOutputRange(-1, 1);
+    liftPID.controller.setP(5e-4);
+    liftPID.controller.setI(1e-6);
+    liftPID.controller.setD(0);
+    liftPID.controller.setFF(0.000156);
+    liftPID.controller.setOutputRange(-1, 1);
 
     liftTarget = liftEncoder.getPosition();
-    SmartDashboard.putBoolean("Lift uses PID", true);
 
     balanceControl.enableContinuousInput(-180, 180);
   }
 
   @Override
   public void robotPeriodic() {
+    // Output Robot info
+
     SmartDashboard.putNumber("Pitch", robotGyro.getPitch());
     SmartDashboard.putNumber("Roll", robotGyro.getRoll());
     SmartDashboard.putNumber("Yaw", robotGyro.getYaw());
@@ -130,7 +136,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Lift (Target)", liftTarget);
     SmartDashboard.putNumber("Turn PID Out", turnDrive.getAppliedOutput());
     SmartDashboard.putNumber("Lift PID Out", turnDrive.getAppliedOutput());
-    SmartDashboard.putNumber("Balance PID Out", balanceControl.value);
 
     SmartDashboard.putNumberArray("April Tags", vision.results.stream().mapToDouble(i -> (double) i).toArray());
   }
@@ -170,11 +175,10 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     // Set Gyro
-    balanceControl.update(gyro[0], 0);
     gyro = new double[] { robotGyro.getRoll() - initialGyro[0], robotGyro.getPitch() - initialGyro[1],
         robotGyro.getRoll() - initialGyro[2] };
 
-    speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) / 3.67;
+    speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) * 0.125;
     SmartDashboard.putNumber("Speed Multiplier", speedMultiplier);
 
     // Base Code
@@ -188,22 +192,25 @@ public class Robot extends TimedRobot {
     }
 
     if (m_controller.getTrigger()) {
-      speed += balanceControl.value;
+      double out = balanceControl.calculate(gyro[0], 0);
+      speed += out;
+
+      SmartDashboard.putNumber("Balance PID Out", out);
     }
 
     m_drive.arcadeDrive(turnAccel.set(turn) * (0.5 + speedMultiplier * 0.5) * 0.63,
         forwardAccel.set(speed) * speedMultiplier * 0.6);
 
     // Arm Code
-    armSpeedMultiplier = 0.5 + ((1 - arm_controller.getThrottle()) / 2);
+    armSpeedMultiplier = 0.5 + ((1 - arm_controller.getThrottle()) / 4);
     SmartDashboard.putNumber("Arm Speed Multiplier", armSpeedMultiplier);
 
     var possible_target = rotateTarget - (arm_controller.getZ() * armSpeedMultiplier * 0.05);
     if (possible_target > -16 && possible_target < 16) {
       rotateTarget = possible_target;
     }
-    if (SmartDashboard.getBoolean("Should Turn", true)) {
-      turnPID.setReference(rotateTarget, ControlType.kPosition);
+    if (shouldRotate.get()) {
+      turnPID.setSetpoint(rotateTarget);
     } else {
       turnDrive.set(0);
     }
@@ -212,8 +219,8 @@ public class Robot extends TimedRobot {
     if (possible_target > 0 && possible_target < 90) { // TODO: Assign the top value based on testing
       liftTarget = possible_target;
     }
-    if (SmartDashboard.getBoolean("Lift uses PID", true)) {
-      liftPID.setReference(liftTarget, ControlType.kPosition);
+    if (liftUsesPID.get()) {
+      liftPID.setSetpoint(liftTarget);
     } else {
       liftDrive.set(-arm_controller.getY() * armSpeedMultiplier - 0.02);
     }

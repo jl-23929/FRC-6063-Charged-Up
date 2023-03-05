@@ -11,7 +11,7 @@
   {
     "name": "/Preferences/Lift Uses PID",
     "type": "boolean",
-    "value": true,
+    "value": false,
     "properties": {
       "persistent": true,
       "retained": true

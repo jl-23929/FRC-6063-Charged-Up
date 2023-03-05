@@ -10,6 +10,7 @@ import org.opencv.imgproc.Imgproc;
 import edu.wpi.first.apriltag.AprilTagDetector;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 
 public class Vision {
     private Thread thread;
@@ -113,6 +114,5 @@ public class Vision {
                 });
         thread.setDaemon(true);
         thread.start();
-
     }
 }
