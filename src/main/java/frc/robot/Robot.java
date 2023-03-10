@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
@@ -186,14 +187,14 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    speedMultiplier = 0.75 + ((1 - m_controller.getThrottle())) * 0.125;
+    speedMultiplier = 0.75 + ((1 - arm_controller.getThrottle())) * 0.125;
     SmartDashboard.putNumber("Speed Multiplier", speedMultiplier);
 
     // Base Code
     double speed, turn;
-    if (!(Math.abs(m_controller.getZ()) < 0.05) || !(Math.abs(m_controller.getY()) < 0.05)) {
-      speed = m_controller.getY();
-      turn = m_controller.getZ();
+    if (!(Math.abs(m_controller.getRawAxis(4)) < 0.05) || !(Math.abs(m_controller.getRawAxis(1)) < 0.05)) {
+      speed = m_controller.getRawAxis(1);
+      turn = m_controller.getRawAxis(4);
     } else {
       speed = 0;
       turn = 0;
