@@ -9,11 +9,12 @@ import edu.wpi.first.wpilibj.Joystick;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.CANSparkMax.SoftLimitDirection;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -43,10 +44,6 @@ public class Robot extends TimedRobot {
   Encoder right_encoder = new Encoder(0, 1);
 
   DifferentialDrive m_drive = new DifferentialDrive(leftGroup, rightGroup);
-
-  private final CANSparkMax turnDrive = new CANSparkMax(24, CANSparkMax.MotorType.kBrushless);
-  private final MaxPID turnPID = new MaxPID(turnDrive.getPIDController());
-  private final RelativeEncoder turnEncoder = turnDrive.getEncoder();
 
   private final CANSparkMax liftDrive = new CANSparkMax(25, CANSparkMax.MotorType.kBrushless);
   private final RelativeEncoder liftEncoder = liftDrive.getEncoder();
@@ -84,21 +81,15 @@ public class Robot extends TimedRobot {
     robotGyro.calibrate();
     initialGyro = new double[] { robotGyro.getPitch(), robotGyro.getRoll(), robotGyro.getYaw() };
 
-    turnDrive.setSmartCurrentLimit(20);
-
-    // Set rotate PID
-    turnPID.controller.setP(0.1);
-    turnPID.controller.setI(0.0005);
-    turnPID.controller.setOutputRange(-0.4, 0.4);
-    turnDrive.setSoftLimit(SoftLimitDirection.kForward, 9);
-    turnDrive.setSoftLimit(SoftLimitDirection.kReverse, 9);
-
-    turnDrive.setInverted(true);
-
     balanceControl.enableContinuousInput(-180, 180);
 
     SmartDashboard.putNumber("With Tag Speed", 0.8);
     SmartDashboard.putNumber("Without Tag Speed", 0.6);
+
+    m_leftFrontDrive.setNeutralMode(NeutralMode.Brake);
+    m_leftBackDrive.setNeutralMode(NeutralMode.Brake);
+    m_rightFrontDrive.setNeutralMode(NeutralMode.Brake);
+    m_rightBackDrive.setNeutralMode(NeutralMode.Brake);
   }
 
   @Override
@@ -116,12 +107,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Calibrated Roll", gyro[1]);
     SmartDashboard.putNumber("Calibrated Yaw", gyro[2]);
 
-    SmartDashboard.putNumber("Rotate", turnEncoder.getPosition());
     SmartDashboard.putNumber("Rotate (Target)", rotateTarget);
     SmartDashboard.putNumber("Lift", liftEncoder.getPosition());
     SmartDashboard.putNumber("Lift (Target)", liftTarget);
-    SmartDashboard.putNumber("Turn PID Out", turnDrive.getAppliedOutput());
-    SmartDashboard.putNumber("Lift PID Out", turnDrive.getAppliedOutput());
 
     SmartDashboard.putNumber("L encoder", left_encoder.get());
     SmartDashboard.putNumber("R encoder", right_encoder.get());
@@ -167,14 +155,12 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopInit() {
-    rotateTarget = turnEncoder.getPosition();
     liftTarget = liftEncoder.getPosition();
     initialGyro = new double[] { robotGyro.getPitch(), robotGyro.getRoll(), robotGyro.getYaw() };
   }
 
   @Override
   public void simulationInit() {
-    REVPhysicsSim.getInstance().addSparkMax(turnDrive, DCMotor.getNEO(1));
     REVPhysicsSim.getInstance().addSparkMax(liftDrive, DCMotor.getNEO(1));
   }
 
@@ -199,18 +185,12 @@ public class Robot extends TimedRobot {
       turn = 0;
     }
 
-    if (m_controller.getTrigger()) {
-      speed += calcBalance();
-    }
-
-    m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.63,
-        speed * speedMultiplier * 0.9);
+    m_drive.arcadeDrive(turn * (0.5 + speedMultiplier * 0.5) * 0.8,
+        speed * speedMultiplier * 1);
 
     // Arm Code
     armSpeedMultiplier = 0.5 + ((1 - arm_controller.getThrottle()) / 4);
     SmartDashboard.putNumber("Arm Speed Multiplier", armSpeedMultiplier);
-
-    turnDrive.set(arm_controller.getZ() * armSpeedMultiplier* 0.25);
 
     liftDrive.set(-arm_controller.getY() * armSpeedMultiplier - 0.02);
 
