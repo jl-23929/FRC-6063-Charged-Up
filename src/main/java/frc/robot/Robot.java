@@ -202,7 +202,7 @@ public class Robot extends TimedRobot {
 
     // Base Code
     double speed, turn;
-    if (!(Math.abs(m_controller.getRawAxis(4)) < 0.05) || !(Math.abs(m_controller.getRawAxis(1)) < 0.05)) {
+    if (!(Math.abs(m_controller.getY()) < 0.05) || !(Math.abs(m_controller.getZ()) < 0.05)) {
       speed = m_controller.getY();
       turn = m_controller.getZ();
     } else {
